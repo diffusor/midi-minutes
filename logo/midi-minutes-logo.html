@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<!-- This file implements JavaScript-generated SVG elements for generating the
+  - MIDI Minutes logo.  It also implements controls for adjusting aspects of
+  - the logo for logo design purposes.
+  -->
+<html>
+<body>
+
+<p>Scale settings:</p>
+
+<div>
+  <input type="range" id="key-rotation" name="key-rotation"
+         min="0" max="360" value="0" step="1">
+  <label for="key-rotation">Key Rotation</label>
+</div>
+
+<div>
+  <input type="range" id="outer-radius" name="outer-radius"
+         min="0" max="100" value="98" step="1">
+  <label for="outer-radius">Outer Radius</label>
+</div>
+
+<div>
+  <input type="range" id="inner-radius" name="inner-radius"
+         min="0" max="100" value="30" step="1">
+  <label for="inner-radius">Inner Radius</label>
+</div>
+
+<div>
+  <input type="range" id="black-key-start-radius" name="black-key-start-radius" 
+         min="0" max="100" value="50" step="1">
+  <label for="black-key-start-radius">Black key start radius</label>
+</div>
+
+<svg width="201" height="201" viewBox="-100 -100 201 201">
+  <circle id="outer-circle" cx="0" cy="0" r="40" stroke="green" stroke-width="4" fill="yellow" />
+  <path d="M 0 20 l 0 20"
+        stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/>
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="red" stop-opacity="1" />
+      <stop offset="100%" stop-color="green" stop-opacity="1" />
+    </linearGradient>
+  </defs>
+  <g id="black-key-group"
+     fill="url(#grad2)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
+    <polygon points="40,1 80,2 80,-2, 40,-1" transform="rotate(0)"/>
+  </g>
+  <!--path d="M 10 315
+           L 110 215
+           A 30 50 0 0 1 162.55 162.45
+           L 172.55 152.45
+           A 30 50 -45 0 1 215.1 109.9
+           L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
+</svg>
+<br/>
+
+<!-- other svg examples from w3schools -->
+<svg width="400" height="100">
+  <rect width="400" height="100" style="fill:rgb(0,0,255);stroke-width:10;stroke:rgb(0,0,0)" />
+</svg>
+<br/>
+
+<svg width="400" height="180">
+  <rect x="50" y="20" rx="20" ry="20" width="150" height="150"
+  style="fill:red;stroke:black;stroke-width:5;opacity:0.5" />
+</svg>
+<br/>
+
+<svg width="300" height="200">
+  <polygon points="100,10 40,198 190,78 10,78 160,198"
+  style="fill:lime;stroke:purple;stroke-width:5;fill-rule:evenodd;" />
+</svg>
+<br/>
+
+<svg height="130" width="500">
+  <defs>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="red" stop-opacity="1" />
+      <stop offset="100%" stop-color="green" stop-opacity="1" />
+    </linearGradient>
+  </defs>
+  <ellipse cx="100" cy="70" rx="85" ry="55" fill="url(#grad2)" />
+  <text fill="#ffffff" font-size="45" font-family="Verdana" x="45" y="86">!SVG</text>
+  Sorry, your browser does not support inline SVG.
+</svg>
+<br/>
+
+<script type="text/javascript">
+  // Outer-radius
+  var outer_radius_slider = document.getElementById('outer-radius');
+  var outer_circle = document.getElementById('outer-circle');
+  outer_circle.setAttribute("r", outer_radius_slider.value);
+
+  outer_radius_slider.addEventListener("input", function() {
+    console.log(this.value);
+    outer_circle.setAttribute("r", this.value);
+  });
+
+  // Rotation
+  var key_rotation_slider = document.getElementById('key-rotation');
+  var black_key_group = document.getElementById('black-key-group');
+  set_black_key_rotation = function(slider) { 
+    black_key_group.setAttribute("transform", `rotate(${slider.value})`);
+  }
+  set_black_key_rotation(key_rotation_slider);
+
+  key_rotation_slider.addEventListener("input", function() {
+    console.log(this.value);
+    set_black_key_rotation(this);
+  });
+</script>
+
+</body>
+</html>
