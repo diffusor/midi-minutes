@@ -4,20 +4,85 @@
   - the logo for logo design purposes.
   -->
 <html>
+<head>
+  <style type="text/css">
+    input[type=range] {
+      width: 55%;
+      vertical-align: middle;
+    }
+    input[type=number] {
+      width: 4em;
+      vertical-align: middle;
+    }
+  </style>
+
+  <script type="text/javascript" defer>
+    // Outer-radius
+    var outer_radius_slider;
+    var outer_circle;
+
+    // Rotation
+    var key_rotation_slider;
+    var black_key_group;
+
+    function update_sibling(e) {
+      var other_input = e.target.previousElementSibling || e.target.nextElementSibling;
+      other_input.value = e.target.value;
+    }
+
+    function set_black_key_rotation(e) {
+      console.log("Rotate to ", e.target.value);
+      update_sibling(e);
+      black_key_group.setAttribute("transform", `rotate(${e.target.value})`);
+    }
+
+    function set_outer_radius(e) {
+      console.log("set outer radius to ", e.target.value);
+      update_sibling(e);
+      outer_circle.setAttribute("r", e.target.value);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      outer_radius_slider = document.getElementById('outer-radius');
+      outer_circle = document.getElementById('outer-circle');
+      key_rotation_slider = document.getElementById('key-rotation');
+      black_key_group = document.getElementById('black-key-group');
+
+      outer_radius_slider.addEventListener("input", function() {
+        console.log(this.value);
+        outer_circle.setAttribute("r", this.value);
+      });
+      outer_radius_slider.addEventListener("input", set_outer_radius);
+      document.getElementById("outer-radius-n").addEventListener("input", set_outer_radius);
+      outer_radius_slider.dispatchEvent(new Event("input"));
+
+      key_rotation_slider.addEventListener("input", set_black_key_rotation);
+      document.getElementById("key-rotation-n").addEventListener("input", set_black_key_rotation);
+      key_rotation_slider.dispatchEvent(new Event("input"));
+    });
+  </script>
+</head>
+
 <body>
 
 <p>Scale settings:</p>
 
 <div>
-  <input type="range" id="key-rotation" name="key-rotation"
-         min="0" max="360" value="0" step="1">
-  <label for="key-rotation">Key Rotation</label>
+  <label for="key-rotation">Key Rotation
+    <input type="range" id="key-rotation" name="key-rotation"
+           min="0" max="360" step="1" value="270" />
+    <input type="number" id="key-rotation-n" name="key-rotation"
+           min="0" max="360" step="1" />
+  </label>
 </div>
 
 <div>
-  <input type="range" id="outer-radius" name="outer-radius"
-         min="0" max="100" value="98" step="1">
-  <label for="outer-radius">Outer Radius</label>
+  <label for="outer-radius">Outer Radius
+    <input type="range" id="outer-radius" name="outer-radius"
+           min="0" max="100" step="1" value="98" />
+    <input type="number" id="outer-radius-n" name="outer-radius"
+           min="0" max="100" step="1" />
+  </label>
 </div>
 
 <div>
@@ -85,31 +150,6 @@
   Sorry, your browser does not support inline SVG.
 </svg>
 <br/>
-
-<script type="text/javascript">
-  // Outer-radius
-  var outer_radius_slider = document.getElementById('outer-radius');
-  var outer_circle = document.getElementById('outer-circle');
-  outer_circle.setAttribute("r", outer_radius_slider.value);
-
-  outer_radius_slider.addEventListener("input", function() {
-    console.log(this.value);
-    outer_circle.setAttribute("r", this.value);
-  });
-
-  // Rotation
-  var key_rotation_slider = document.getElementById('key-rotation');
-  var black_key_group = document.getElementById('black-key-group');
-  set_black_key_rotation = function(slider) { 
-    black_key_group.setAttribute("transform", `rotate(${slider.value})`);
-  }
-  set_black_key_rotation(key_rotation_slider);
-
-  key_rotation_slider.addEventListener("input", function() {
-    console.log(this.value);
-    set_black_key_rotation(this);
-  });
-</script>
 
 </body>
 </html>
