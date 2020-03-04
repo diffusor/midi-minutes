@@ -20,9 +20,82 @@
     .wrapper .config {
       flex: 1;
     }
+    #params-json {
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
   </style>
 
   <script type="text/javascript" defer>
+    // Control configuration
+    var config = {
+      radius: {step: 1, lower: 0, upper: 100},
+      stroke: {step: 0.1, lower: 0, upper: 10},
+      width: {step: 0.1, lower: 0, upper: 10},
+      octavecount: {step: 0.01, lower: .5, upper: 10},
+      gradstops: {step: 1, lower: 0, upper: 5},
+    };
+
+    // Slider-controlled logo parameters
+    // Names are split with _ and the final element is looked up in the config
+    // object to determine additional properties for the input controls.
+    var params = {
+      clock_face: {
+        color: "white",
+        center_radius: 8,
+        outer_radius: 98,
+        octavecount: 5,
+      },
+      minute_ticks: {
+        inner_radius: 93,
+        outer_radius: 98,
+        stroke: 2,
+      },
+      hour_ticks: {
+        inner_radius: 88,
+        outer_radius: 98,
+        stroke: 3,
+      },
+      minute_hand: {
+        color: "black",
+        inner_radius: 5,
+        middle_radius: 20,
+        outer_radius: 95,
+        inner_width: 0,
+        middle_width: 4,
+        outer_width: 0,
+      },
+      hour_hand: {
+        color: "black",
+        inner_radius: 5,
+        middle_radius: 20,
+        outer_radius: 95,
+        inner_width: 0,
+        middle_width: 6,
+        outer_width: 0,
+      },
+      black_keys: {
+        color: "black",
+        inner_radius: 60,
+        outer_radius: 85,
+        gradstops: 2,
+      },
+      white_keys: {
+        color: "black",
+        inner_radius: 40,
+        outer_radius: 85,
+        gradstops: 3,
+        stroke: 2,
+      },
+    };
+    var p = [
+      { group: "minute_hand",
+        controls: [
+          { name: "minute_hand_inner_radius",
+            value: 5, step: 1, lower: 0, upper: 100 },
+        ] },
+    ];
+
     // Outer-radius
     var outer_radius_slider;
     var outer_circle;
@@ -37,13 +110,13 @@
     }
 
     function set_black_key_rotation(e) {
-      console.log("Rotate to ", e.target.value);
+      //console.log("Rotate to ", e.target.value);
       update_sibling(e);
       black_key_group.setAttribute("transform", `rotate(${e.target.value})`);
     }
 
     function set_outer_radius(e) {
-      console.log("set outer radius to ", e.target.value);
+      //console.log("set outer radius to ", e.target.value);
       update_sibling(e);
       outer_circle.setAttribute("r", e.target.value);
     }
@@ -55,7 +128,6 @@
       black_key_group = document.getElementById('black-key-group');
 
       outer_radius_slider.addEventListener("input", function() {
-        console.log(this.value);
         outer_circle.setAttribute("r", this.value);
       });
       outer_radius_slider.addEventListener("input", set_outer_radius);
@@ -69,6 +141,14 @@
       // hook up SVG save button
       document.getElementById("save-svg-button").addEventListener("click", function() {
         saveLogoSvg();
+      });
+
+      document.getElementById("show-params-button").addEventListener("click", function() {
+        showParamsJson();
+      });
+
+      document.getElementById("copy-params-button").addEventListener("click", function() {
+        copyParamsJson();
       });
     });
 
@@ -91,6 +171,31 @@
     function saveLogoSvg() {
       var logo = document.getElementById("logo");
       saveSvg(logo, "midi-minutes-logo.svg");
+    }
+
+    function showParamsJson() {
+      var element = document.getElementById("params-json");
+      text = JSON.stringify(params, null, 2);
+      var lines = text.split("\n");
+
+      function remove_quote (s) {
+        return s.replace('"', '').replace('"', '');
+      }
+      lines = lines.map(remove_quote);
+      text = lines.join("\n");
+
+      element.textContent = text;
+      return text;
+    }
+    function copyParamsJson() {
+      var text = showParamsJson();
+      // Add 4 spaces to each line before putting it in the clipboard
+      var old_lines = text.split("\n");
+      var lines = [];
+      for (const line in old_lines) {
+        lines.push(`    ${old_lines[line]}\n`);
+      }
+      window.prompt("Copy to clipboard: Ctrl+C, Enter", lines.join(""));
     }
   </script>
 </head>
@@ -129,34 +234,43 @@
     <div>
       <label for="black-key-start-radius">Black key start radius</label>
     </div>
+  </div>
+
+
+  <div>
+    <svg id="logo" width="201" height="201" viewBox="-100 -100 201 201">
+      <circle id="outer-circle" cx="0" cy="0" r="40" stroke="green" stroke-width="4" fill="yellow" />
+      <path d="M 0 20 l 0 20"
+            stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/>
+      <defs>
+        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="red" stop-opacity="1" />
+          <stop offset="100%" stop-color="green" stop-opacity="1" />
+        </linearGradient>
+      </defs>
+      <g id="black-key-group"
+         fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
+        <polygon points="40,1 80,2 80,-2, 40,-1" transform="rotate(0)"/>
+      </g>
+      <!--path d="M 10 315
+               L 110 215
+               A 30 50 0 0 1 162.55 162.45
+               L 172.55 152.45
+               A 30 50 -45 0 1 215.1 109.9
+               L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
+    </svg>
 
     <div>
       <input type="button" id="save-svg-button" value="Save to SVG" />
     </div>
+    <div>
+      <input type="button" id="show-params-button" value="Gen params JSON" />
+    </div>
+    <div>
+      <input type="button" id="copy-params-button" value="Copy params JSON to clipboard" />
+    </div>
+    <div id="params-json"> </div>
   </div>
-
-
-  <svg id="logo" width="201" height="201" viewBox="-100 -100 201 201">
-    <circle id="outer-circle" cx="0" cy="0" r="40" stroke="green" stroke-width="4" fill="yellow" />
-    <path d="M 0 20 l 0 20"
-          stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/>
-    <defs>
-      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="red" stop-opacity="1" />
-        <stop offset="100%" stop-color="green" stop-opacity="1" />
-      </linearGradient>
-    </defs>
-    <g id="black-key-group"
-       fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
-      <polygon points="40,1 80,2 80,-2, 40,-1" transform="rotate(0)"/>
-    </g>
-    <!--path d="M 10 315
-             L 110 215
-             A 30 50 0 0 1 162.55 162.45
-             L 172.55 152.45
-             A 30 50 -45 0 1 215.1 109.9
-             L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
-  </svg>
 </div>
 
 <br/>
