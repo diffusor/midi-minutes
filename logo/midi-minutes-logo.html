@@ -6,6 +6,9 @@
 <html>
 <head>
   <style type="text/css">
+    svg {
+      border: solid 1px grey;
+    }
     input[type=range] {
       width: 55%;
       vertical-align: middle;
@@ -468,7 +471,9 @@
 
 
   <div>
-    <svg id="logo" width="201" height="201" viewBox="-100 -100 201 201">
+    <svg id="logo"
+        width="201" height="201" viewBox="-100 -100 201 201">
+
       <circle id="outer-circle" cx="0" cy="0" r="40" stroke="black" stroke-width="4" />
       <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
       <path d="M 0 20 l 0 20"
@@ -489,6 +494,31 @@
                L 172.55 152.45
                A 30 50 -45 0 1 215.1 109.9
                L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
+    </svg>
+
+    <svg id="logo-half"
+        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        width="100" height="100" viewBox="0 0 201 201">
+      <use xlink:href="#logo" />
+    </svg>
+
+    <svg id="logo-quarter"
+        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        width="50" height="50" viewBox="0 0 201 201">
+      <use xlink:href="#logo" />
+    </svg>
+
+    <svg id="logo-eigth"
+        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        width="25" height="25" viewBox="0 0 201 201">
+      <use xlink:href="#logo" />
+    </svg>
+
+    <br />
+    <svg id="logo-big"
+        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        width="400" height="400" viewBox="0 0 201 201">
+      <use xlink:href="#logo" />
     </svg>
 
     <div>
