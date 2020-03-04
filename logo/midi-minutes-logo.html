@@ -14,6 +14,24 @@
       width: 4em;
       vertical-align: middle;
     }
+    .param-label {
+      display: inline-block;
+      width: 8em;
+      vertical-align: middle;
+      text-align: right;
+    }
+    .slider-min {
+      display: inline-block;
+      width: 2em;
+      vertical-align: middle;
+      text-align: right;
+    }
+    .slider-max {
+      display: inline-block;
+      width: 3em;
+      vertical-align: middle;
+      text-align: left;
+    }
     .wrapper {
       display: flex;
     }
@@ -29,15 +47,15 @@
   <script type="text/javascript" defer>
     // Control configuration
     var config = {
-      radius: {step: 1, lower: 0, upper: 100},
-      stroke: {step: 0.1, lower: 0, upper: 10},
-      width: {step: 0.1, lower: 0, upper: 10},
-      keycount: {step: 1, lower: 3, upper: 110},
-      startkey: {step: 1, lower: 1, upper: 7},
-      minutes: {step: 1, lower: 0, upper: 60},
-      hours: {step: 1, lower: 0, upper: 10},
-      offset: {step: 0.1, lower: -6, upper: 6},
-      gradstops: {step: 1, lower: 0, upper: 5},
+      radius: {step: 1, min: 0, max: 100},
+      stroke: {step: 0.1, min: 0, max: 10},
+      width: {step: 0.1, min: 0, max: 10},
+      keycount: {step: 1, min: 3, max: 110},
+      startkey: {step: 1, min: 1, max: 7},
+      minutes: {step: 1, min: 0, max: 60},
+      hours: {step: 1, min: 0, max: 10},
+      offset: {step: 0.1, min: -6, max: 6},
+      gradstops: {step: 1, min: 0, max: 5},
     };
 
     // Slider-controlled logo parameters
@@ -45,7 +63,7 @@
     // object to determine additional properties for the input controls.
     var params = {
       clock_face: {
-        color: "white",
+        color: "#FFFFFF",
         center_radius: 8,
         outer_radius: 98,
         keycount: 60,
@@ -97,9 +115,24 @@
       },
     };
 
+    var redraw = {
+      clock_face: function(e) {},
+      minute_ticks: function(e) {},
+      hour_ticks: function(e) {},
+      minute_hand: function(e) {},
+      hour_hand: function(e) {},
+      black_keys: function(e) {},
+      white_keys: function(e) {},
+    };
+
     function update_sibling(e) {
-      var other_input = e.target.previousElementSibling || e.target.nextElementSibling;
-      other_input.value = e.target.value;
+      var el = e.target;
+      for (let i = 0; i < el.parentElement.children.length; i++) {
+        var child = el.parentElement.children[i];
+        if (child.type && child.type != el.type) {
+          child.value = el.value;
+        }
+      }
     }
 
     function set_black_key_rotation(e) {
@@ -123,24 +156,106 @@
       return ident;
     }
 
-    function construct_sliders() {
+    function add_controls_to_param_group(group, group_div) {
+      for (const param in params[group]) {
+        const default_value = params[group][param];
+        const control_type = param.replace(/.*_/, '');
+
+        var param_div = document.createElement('div');
+        group_div.appendChild(param_div);
+        param_div.id = `${param}-control`;
+        param_div.setAttribute('class', `param-control`);
+
+        // The label also contains all linked input elements, allowing one to
+        // click anywhere on the control line to focus the main input
+        // (for sliders, this is the number box)
+        var param_label = document.createElement('label');
+        param_div.appendChild(param_label);
+
+        var span = document.createElement('span');
+        param_label.appendChild(span);
+        span.setAttribute('class', 'param-label');
+        span.textContent = wordify_ident(param);
+
+        var input;
+
+        function add_input_el(type, updater) {
+          var el = document.createElement('input');
+          param_label.appendChild(el);
+          input = el; // for generating synthetic input to init SVG
+
+          el.type = type;
+          el.id = `${param}-${type}`;
+          el.value = default_value;
+          el.addEventListener("input", updater);
+
+          for (const attr in config[control_type]) {
+            el.setAttribute(attr, config[control_type][attr]);
+          }
+        }
+
+        function add_slider_limit(attr) {
+          var el = document.createElement('span');
+          param_label.appendChild(el);
+
+          el.id = `${param}-${attr}`;
+          el.setAttribute('class', `slider-${attr}`);
+          el.textContent = config[control_type][attr];
+        }
+
+        function update_param(e) {
+          const value = e.target.value;
+          params[group][param] = value;
+          showParamsJson();
+          // dispatch the update to the associated SVG updater
+          if (typeof redraw[group] === "function") {
+            redraw[group](e);
+          } else if (typeof redraw[group][param] === "function") {
+            redraw[group][param](e);
+          }
+        }
+
+        if (control_type == 'color') {
+          add_input_el('color', update_param);
+
+        } else {
+          // Link the range and number box inputs for the slider
+          function update_slider(e) {
+            update_sibling(e);
+            update_param(e);
+          }
+
+          add_slider_limit('min');
+          add_input_el('range', update_slider);
+          add_slider_limit('max');
+          add_input_el('number', update_slider);
+        }
+
+        param_label.setAttribute('for', input.id);
+        input.dispatchEvent(new Event("input"));
+
+      }
+    }
+
+    function construct_param_controls() {
       var config_div = document.getElementById('config-control');
 
       for (const group in params) {
-
         var group_div = document.createElement('div');
-        group_div.id = group;
         config_div.appendChild(group_div);
+        group_div.id = group;
 
         var group_label = document.createElement('label');
+        group_div.appendChild(group_label);
         var group_text = document.createTextNode(wordify_ident(group));
         group_label.appendChild(group_text);
-        group_div.appendChild(group_label);
+
+        add_controls_to_param_group(group, group_div);
       }
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-      construct_sliders();
+      construct_param_controls();
 
       var outer_radius_slider = document.getElementById('outer-radius');
       outer_radius_slider.addEventListener("input", function() {
