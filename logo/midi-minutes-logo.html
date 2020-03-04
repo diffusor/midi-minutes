@@ -14,6 +14,12 @@
       width: 4em;
       vertical-align: middle;
     }
+    .wrapper {
+      display: flex;
+    }
+    .wrapper .config {
+      flex: 1;
+    }
   </style>
 
   <script type="text/javascript" defer>
@@ -59,65 +65,100 @@
       key_rotation_slider.addEventListener("input", set_black_key_rotation);
       document.getElementById("key-rotation-n").addEventListener("input", set_black_key_rotation);
       key_rotation_slider.dispatchEvent(new Event("input"));
+
+      // hook up SVG save button
+      document.getElementById("save-svg-button").addEventListener("click", function() {
+        saveLogoSvg();
+      });
     });
+
+    // SVG saving code, modified from https://stackoverflow.com/a/46403589
+    // To save as PNG, consider this: https://stackoverflow.com/a/44769098
+    function saveSvg(svgEl, name) {
+      svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      var svgData = svgEl.outerHTML;
+      var preface = '<?xml version="1.0" standalone="no"?>\r\n';
+      var svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
+      var svgUrl = URL.createObjectURL(svgBlob);
+      var downloadLink = document.createElement("a");
+      downloadLink.href = svgUrl;
+      downloadLink.download = name;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+
+    function saveLogoSvg() {
+      var logo = document.getElementById("logo");
+      saveSvg(logo, "midi-minutes-logo.svg");
+    }
   </script>
 </head>
 
 <body>
 
-<p>Scale settings:</p>
+<div class="wrapper">
+  <div class="config">
+    <p>Scale settings:</p>
 
-<div>
-  <label for="key-rotation">Key Rotation
-    <input type="range" id="key-rotation" name="key-rotation"
-           min="0" max="360" step="1" value="270" />
-    <input type="number" id="key-rotation-n" name="key-rotation"
-           min="0" max="360" step="1" />
-  </label>
+    <div>
+      <label for="key-rotation">Key Rotation
+        <input type="range" id="key-rotation" name="key-rotation"
+               min="0" max="360" step="1" value="270" />
+        <input type="number" id="key-rotation-n" name="key-rotation"
+               min="0" max="360" step="1" />
+      </label>
+    </div>
+
+    <div>
+      <label for="outer-radius">Outer Radius
+        <input type="range" id="outer-radius" name="outer-radius"
+               min="0" max="100" step="1" value="98" />
+        <input type="number" id="outer-radius-n" name="outer-radius"
+               min="0" max="100" step="1" />
+      </label>
+    </div>
+
+    <div>
+      <input type="range" id="inner-radius" name="inner-radius"
+             min="0" max="100" value="30" step="1">
+      <label for="inner-radius">Inner Radius</label>
+      <input type="range" id="black-key-start-radius" name="black-key-start-radius" 
+             min="0" max="100" value="50" step="1">
+    </div>
+    <div>
+      <label for="black-key-start-radius">Black key start radius</label>
+    </div>
+
+    <div>
+      <input type="button" id="save-svg-button" value="Save to SVG" />
+    </div>
+  </div>
+
+
+  <svg id="logo" width="201" height="201" viewBox="-100 -100 201 201">
+    <circle id="outer-circle" cx="0" cy="0" r="40" stroke="green" stroke-width="4" fill="yellow" />
+    <path d="M 0 20 l 0 20"
+          stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/>
+    <defs>
+      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="red" stop-opacity="1" />
+        <stop offset="100%" stop-color="green" stop-opacity="1" />
+      </linearGradient>
+    </defs>
+    <g id="black-key-group"
+       fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
+      <polygon points="40,1 80,2 80,-2, 40,-1" transform="rotate(0)"/>
+    </g>
+    <!--path d="M 10 315
+             L 110 215
+             A 30 50 0 0 1 162.55 162.45
+             L 172.55 152.45
+             A 30 50 -45 0 1 215.1 109.9
+             L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
+  </svg>
 </div>
 
-<div>
-  <label for="outer-radius">Outer Radius
-    <input type="range" id="outer-radius" name="outer-radius"
-           min="0" max="100" step="1" value="98" />
-    <input type="number" id="outer-radius-n" name="outer-radius"
-           min="0" max="100" step="1" />
-  </label>
-</div>
-
-<div>
-  <input type="range" id="inner-radius" name="inner-radius"
-         min="0" max="100" value="30" step="1">
-  <label for="inner-radius">Inner Radius</label>
-</div>
-
-<div>
-  <input type="range" id="black-key-start-radius" name="black-key-start-radius" 
-         min="0" max="100" value="50" step="1">
-  <label for="black-key-start-radius">Black key start radius</label>
-</div>
-
-<svg width="201" height="201" viewBox="-100 -100 201 201">
-  <circle id="outer-circle" cx="0" cy="0" r="40" stroke="green" stroke-width="4" fill="yellow" />
-  <path d="M 0 20 l 0 20"
-        stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/>
-  <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="red" stop-opacity="1" />
-      <stop offset="100%" stop-color="green" stop-opacity="1" />
-    </linearGradient>
-  </defs>
-  <g id="black-key-group"
-     fill="url(#grad2)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
-    <polygon points="40,1 80,2 80,-2, 40,-1" transform="rotate(0)"/>
-  </g>
-  <!--path d="M 10 315
-           L 110 215
-           A 30 50 0 0 1 162.55 162.45
-           L 172.55 152.45
-           A 30 50 -45 0 1 215.1 109.9
-           L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
-</svg>
 <br/>
 
 <!-- other svg examples from w3schools -->
