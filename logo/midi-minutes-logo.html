@@ -87,7 +87,8 @@
         inner_width: 0,
         middle_width: 4,
         outer_width: 0,
-        set_offset: 0,
+        minutes: 25,
+        offset: 0,
       },
       hour_hand: {
         color: "black",
@@ -97,33 +98,57 @@
         inner_width: 0,
         middle_width: 6,
         outer_width: 0,
-        set_hours: 0,
-        set_offset: 0,
+        hours: 0,
+        offset: 0,
       },
       black_keys: {
         color: "black",
         inner_radius: 60,
         outer_radius: 85,
+        minutes: 0,
+        offset: 0,
         gradstops: 2,
       },
       white_keys: {
         color: "black",
         inner_radius: 40,
         outer_radius: 85,
-        gradstops: 3,
         stroke: 2,
+        minutes: 0,
+        offset: 0,
+        gradstops: 3,
       },
     };
 
     var redraw = {
-      clock_face: function(e) {},
+      clock_face: function(e) {
+        var outer_circle = document.getElementById('outer-circle');
+        outer_circle.setAttribute("r", params.clock_face.outer_radius);
+      },
       minute_ticks: function(e) {},
       hour_ticks: function(e) {},
       minute_hand: function(e) {},
       hour_hand: function(e) {},
-      black_keys: function(e) {},
+      black_keys: function(e) {
+        var black_key_group = document.getElementById('black-key-group');
+        rotate_hand(black_key_group, params.black_keys);
+      },
       white_keys: function(e) {},
     };
+
+    // Generate a transform on the given SVG element that will
+    // rotate it to the parameter settings in the given group.
+    // The SVG element is assumed to be drawn along the X axis,
+    // to the right.
+    // The rotation is taken from the hours, minutes, and offset
+    // parameters in the param group.
+    function rotate_hand(el, g) {
+      var angle = -90;
+      if ('hours' in g) { angle += Number(g.hours) * 360 / 12; }
+      if ('minutes' in g) { angle += Number(g.minutes) * 360 / 60; }
+      if ('offset' in g) { angle += Number(g.offset); }
+      el.setAttribute("transform", `rotate(${angle})`);
+    }
 
     function update_sibling(e) {
       var el = e.target;
@@ -133,20 +158,6 @@
           child.value = el.value;
         }
       }
-    }
-
-    function set_black_key_rotation(e) {
-      //console.log("Rotate to ", e.target.value);
-      update_sibling(e);
-      var black_key_group = document.getElementById('black-key-group');
-      black_key_group.setAttribute("transform", `rotate(${e.target.value})`);
-    }
-
-    function set_outer_radius(e) {
-      //console.log("set outer radius to ", e.target.value);
-      update_sibling(e);
-      var outer_circle = document.getElementById('outer-circle');
-      outer_circle.setAttribute("r", e.target.value);
     }
 
     // Return a phrase from the given - or _ separated identifier
@@ -177,8 +188,12 @@
         span.setAttribute('class', 'param-label');
         span.textContent = wordify_ident(param);
 
+        // The <input> element to target with this control's label via its
+        // "for" attribute.  This element is also used to generate the
+        // synthetic "input" event to initialize the generated SVG and JSON.
         var input;
 
+        // Add an input of the given type to the param control's label
         function add_input_el(type, updater) {
           var el = document.createElement('input');
           param_label.appendChild(el);
@@ -194,6 +209,7 @@
           }
         }
 
+        // Add min or max <span> to a slider's <label> contents
         function add_slider_limit(attr) {
           var el = document.createElement('span');
           param_label.appendChild(el);
@@ -203,6 +219,7 @@
           el.textContent = config[control_type][attr];
         }
 
+        // Main <input> callback for input events
         function update_param(e) {
           const value = e.target.value;
           params[group][param] = value;
@@ -256,20 +273,6 @@
 
     document.addEventListener("DOMContentLoaded", function() {
       construct_param_controls();
-
-      var outer_radius_slider = document.getElementById('outer-radius');
-      outer_radius_slider.addEventListener("input", function() {
-        var outer_circle = document.getElementById('outer-circle');
-        outer_circle.setAttribute("r", this.value);
-      });
-      outer_radius_slider.addEventListener("input", set_outer_radius);
-      document.getElementById("outer-radius-n").addEventListener("input", set_outer_radius);
-      outer_radius_slider.dispatchEvent(new Event("input"));
-
-      var key_rotation_slider = document.getElementById('key-rotation');
-      key_rotation_slider.addEventListener("input", set_black_key_rotation);
-      document.getElementById("key-rotation-n").addEventListener("input", set_black_key_rotation);
-      key_rotation_slider.dispatchEvent(new Event("input"));
 
       // hook up button actions
       document.getElementById("save-svg-button").addEventListener("click", function() {
@@ -338,26 +341,6 @@
 
 <div class="wrapper">
   <div class="config" id="config-control">
-    <p>Scale settings:</p>
-
-    <div>
-      <label for="key-rotation">Key Rotation
-        <input type="range" id="key-rotation" name="key-rotation"
-               min="0" max="360" step="1" value="270" />
-        <input type="number" id="key-rotation-n" name="key-rotation"
-               min="0" max="360" step="1" />
-      </label>
-    </div>
-
-    <div>
-      <label for="outer-radius">Outer Radius
-        <input type="range" id="outer-radius" name="outer-radius"
-               min="0" max="100" step="1" value="98" />
-        <input type="number" id="outer-radius-n" name="outer-radius"
-               min="0" max="100" step="1" />
-      </label>
-    </div>
-
   </div>
 
 
@@ -399,7 +382,7 @@
 
 <br/>
 
-<!-- other svg examples from w3schools -->
+<!-- other svg examples from w3schools
 <svg width="400" height="100">
   <rect width="400" height="100" style="fill:rgb(0,0,255);stroke-width:10;stroke:rgb(0,0,0)" />
 </svg>
@@ -429,6 +412,7 @@
   Sorry, your browser does not support inline SVG.
 </svg>
 <br/>
+-->
 
 </body>
 </html>
