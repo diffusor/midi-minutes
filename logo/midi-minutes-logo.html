@@ -32,7 +32,11 @@
       radius: {step: 1, lower: 0, upper: 100},
       stroke: {step: 0.1, lower: 0, upper: 10},
       width: {step: 0.1, lower: 0, upper: 10},
-      octavecount: {step: 0.01, lower: .5, upper: 10},
+      keycount: {step: 1, lower: 3, upper: 110},
+      startkey: {step: 1, lower: 1, upper: 7},
+      minutes: {step: 1, lower: 0, upper: 60},
+      hours: {step: 1, lower: 0, upper: 10},
+      offset: {step: 0.1, lower: -6, upper: 6},
       gradstops: {step: 1, lower: 0, upper: 5},
     };
 
@@ -44,7 +48,8 @@
         color: "white",
         center_radius: 8,
         outer_radius: 98,
-        octavecount: 5,
+        keycount: 60,
+        startkey: 1,
       },
       minute_ticks: {
         inner_radius: 93,
@@ -64,6 +69,7 @@
         inner_width: 0,
         middle_width: 4,
         outer_width: 0,
+        set_offset: 0,
       },
       hour_hand: {
         color: "black",
@@ -73,6 +79,8 @@
         inner_width: 0,
         middle_width: 6,
         outer_width: 0,
+        set_hours: 0,
+        set_offset: 0,
       },
       black_keys: {
         color: "black",
@@ -88,21 +96,6 @@
         stroke: 2,
       },
     };
-    var p = [
-      { group: "minute_hand",
-        controls: [
-          { name: "minute_hand_inner_radius",
-            value: 5, step: 1, lower: 0, upper: 100 },
-        ] },
-    ];
-
-    // Outer-radius
-    var outer_radius_slider;
-    var outer_circle;
-
-    // Rotation
-    var key_rotation_slider;
-    var black_key_group;
 
     function update_sibling(e) {
       var other_input = e.target.previousElementSibling || e.target.nextElementSibling;
@@ -112,33 +105,58 @@
     function set_black_key_rotation(e) {
       //console.log("Rotate to ", e.target.value);
       update_sibling(e);
+      var black_key_group = document.getElementById('black-key-group');
       black_key_group.setAttribute("transform", `rotate(${e.target.value})`);
     }
 
     function set_outer_radius(e) {
       //console.log("set outer radius to ", e.target.value);
       update_sibling(e);
+      var outer_circle = document.getElementById('outer-circle');
       outer_circle.setAttribute("r", e.target.value);
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-      outer_radius_slider = document.getElementById('outer-radius');
-      outer_circle = document.getElementById('outer-circle');
-      key_rotation_slider = document.getElementById('key-rotation');
-      black_key_group = document.getElementById('black-key-group');
+    // Return a phrase from the given - or _ separated identifier
+    function wordify_ident(ident) {
+      ident = ident.replace(/[-_]/g, ' ');
+      ident = ident.replace(/\b\w/g, c => c.toUpperCase());
+      return ident;
+    }
 
+    function construct_sliders() {
+      var config_div = document.getElementById('config-control');
+
+      for (const group in params) {
+
+        var group_div = document.createElement('div');
+        group_div.id = group;
+        config_div.appendChild(group_div);
+
+        var group_label = document.createElement('label');
+        var group_text = document.createTextNode(wordify_ident(group));
+        group_label.appendChild(group_text);
+        group_div.appendChild(group_label);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      construct_sliders();
+
+      var outer_radius_slider = document.getElementById('outer-radius');
       outer_radius_slider.addEventListener("input", function() {
+        var outer_circle = document.getElementById('outer-circle');
         outer_circle.setAttribute("r", this.value);
       });
       outer_radius_slider.addEventListener("input", set_outer_radius);
       document.getElementById("outer-radius-n").addEventListener("input", set_outer_radius);
       outer_radius_slider.dispatchEvent(new Event("input"));
 
+      var key_rotation_slider = document.getElementById('key-rotation');
       key_rotation_slider.addEventListener("input", set_black_key_rotation);
       document.getElementById("key-rotation-n").addEventListener("input", set_black_key_rotation);
       key_rotation_slider.dispatchEvent(new Event("input"));
 
-      // hook up SVG save button
+      // hook up button actions
       document.getElementById("save-svg-button").addEventListener("click", function() {
         saveLogoSvg();
       });
@@ -187,6 +205,7 @@
       element.textContent = text;
       return text;
     }
+
     function copyParamsJson() {
       var text = showParamsJson();
       // Add 4 spaces to each line before putting it in the clipboard
@@ -203,7 +222,7 @@
 <body>
 
 <div class="wrapper">
-  <div class="config">
+  <div class="config" id="config-control">
     <p>Scale settings:</p>
 
     <div>
@@ -224,16 +243,6 @@
       </label>
     </div>
 
-    <div>
-      <input type="range" id="inner-radius" name="inner-radius"
-             min="0" max="100" value="30" step="1">
-      <label for="inner-radius">Inner Radius</label>
-      <input type="range" id="black-key-start-radius" name="black-key-start-radius" 
-             min="0" max="100" value="50" step="1">
-    </div>
-    <div>
-      <label for="black-key-start-radius">Black key start radius</label>
-    </div>
   </div>
 
 
