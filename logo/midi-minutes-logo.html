@@ -52,10 +52,11 @@
       width: {step: 0.1, min: 0, max: 10},
       keycount: {step: 1, min: 3, max: 110},
       startkey: {step: 1, min: 1, max: 7},
-      minutes: {step: 1, min: 0, max: 60},
       hours: {step: 1, min: 0, max: 10},
-      offset: {step: 0.1, min: -6, max: 6},
-      gradstops: {step: 1, min: 0, max: 5},
+      minutes: {step: 1, min: 0, max: 60},
+      seconds: {step: 1, min: -60, max: 60},
+      offset: {step: 1, min: 0, max: 100},
+      opacity: {step: 1, min: 0, max: 100},
     };
 
     // Slider-controlled logo parameters
@@ -88,7 +89,7 @@
         middle_width: 4,
         outer_width: 0,
         minutes: 25,
-        offset: 0,
+        seconds: 0,
       },
       hour_hand: {
         color: "black",
@@ -99,15 +100,18 @@
         middle_width: 6,
         outer_width: 0,
         hours: 0,
-        offset: 0,
+        seconds: 0,
       },
       black_keys: {
         color: "black",
         inner_radius: 60,
         outer_radius: 85,
         minutes: 0,
-        offset: 0,
-        gradstops: 2,
+        seconds: 0,
+        gradstops: [
+          {color: "#000000", offset: 0, opacity: 100},
+          {color: "#000000", offset: 100, opacity: 0},
+        ],
       },
       white_keys: {
         color: "black",
@@ -115,8 +119,11 @@
         outer_radius: 85,
         stroke: 2,
         minutes: 0,
-        offset: 0,
-        gradstops: 3,
+        seconds: 0,
+        gradstops: [
+          {color: "#000000", offset: 0, opacity: 100},
+          {color: "#000000", offset: 100, opacity: 0},
+        ],
       },
     };
 
@@ -140,13 +147,16 @@
     // rotate it to the parameter settings in the given group.
     // The SVG element is assumed to be drawn along the X axis,
     // to the right.
-    // The rotation is taken from the hours, minutes, and offset
+    // The rotation is taken from the hours, minutes, and seconds
     // parameters in the param group.
+    // * hours: moves 1/12th of the circle (30 degrees)
+    // * minutes: moves 1/60th of the circle (6 degrees)
+    // * seconds: moves 1/3600th of the circle (.1 degrees)
     function rotate_hand(el, g) {
       var angle = -90;
       if ('hours' in g) { angle += Number(g.hours) * 360 / 12; }
       if ('minutes' in g) { angle += Number(g.minutes) * 360 / 60; }
-      if ('offset' in g) { angle += Number(g.offset); }
+      if ('seconds' in g) { angle += Number(g.seconds) * 0.1 ; }
       el.setAttribute("transform", `rotate(${angle})`);
     }
 
@@ -167,89 +177,101 @@
       return ident;
     }
 
+    function create_control_div(control_type, path) {
+      var group = path[0];
+      var param = path[path.length - 1];
+
+      var param_div = document.createElement('div');
+      param_div.id = `${param}-control`;
+      param_div.setAttribute('class', `param-control`);
+
+      // The label also contains all linked input elements, allowing one to
+      // click anywhere on the control line to focus the main input
+      // (for sliders, this is the number box)
+      var param_label = document.createElement('label');
+      param_div.appendChild(param_label);
+
+      var span = document.createElement('span');
+      param_label.appendChild(span);
+      span.setAttribute('class', 'param-label');
+      span.textContent = wordify_ident(param);
+
+      // The <input> element to target with this control's label via its
+      // "for" attribute.  This element is also used to generate the
+      // synthetic "input" event to initialize the generated SVG and JSON.
+      var input;
+
+      // Add an input of the given type to the param control's label
+      function add_input_el(type, updater) {
+        var el = document.createElement('input');
+        param_label.appendChild(el);
+        input = el; // for generating synthetic input to init SVG
+
+        el.type = type;
+        el.id = `${param}-${type}`;
+        el.value = params[group][param];
+        el.addEventListener("input", updater);
+
+        for (const attr in config[control_type]) {
+          el.setAttribute(attr, config[control_type][attr]);
+        }
+      }
+
+      // Add min or max <span> to a slider's <label> contents
+      function add_slider_limit(attr) {
+        var el = document.createElement('span');
+        param_label.appendChild(el);
+
+        el.id = `${param}-${attr}`;
+        el.setAttribute('class', `slider-${attr}`);
+        el.textContent = config[control_type][attr];
+      }
+
+      // Main <input> callback for input events
+      function update_param(e) {
+        const value = e.target.value;
+        params[group][param] = value;
+        showParamsJson();
+        // dispatch the update to the associated SVG updater
+        if (typeof redraw[group] === "function") {
+          redraw[group](e);
+        } else if (typeof redraw[group][param] === "function") {
+          redraw[group][param](e);
+        }
+      }
+
+      if (control_type == 'color') {
+        add_input_el('color', update_param);
+
+      } else {
+        // Link the range and number box inputs for the slider
+        function update_slider(e) {
+          update_sibling(e);
+          update_param(e);
+        }
+
+        add_slider_limit('min');
+        add_input_el('range', update_slider);
+        add_slider_limit('max');
+        add_input_el('number', update_slider);
+      }
+
+      param_label.setAttribute('for', input.id);
+      input.dispatchEvent(new Event("input"));
+
+      return param_div;
+    }
+
     function add_controls_to_param_group(group, group_div) {
       for (const param in params[group]) {
-        const default_value = params[group][param];
+        const data = params[group][param];
         const control_type = param.replace(/.*_/, '');
 
-        var param_div = document.createElement('div');
-        group_div.appendChild(param_div);
-        param_div.id = `${param}-control`;
-        param_div.setAttribute('class', `param-control`);
-
-        // The label also contains all linked input elements, allowing one to
-        // click anywhere on the control line to focus the main input
-        // (for sliders, this is the number box)
-        var param_label = document.createElement('label');
-        param_div.appendChild(param_label);
-
-        var span = document.createElement('span');
-        param_label.appendChild(span);
-        span.setAttribute('class', 'param-label');
-        span.textContent = wordify_ident(param);
-
-        // The <input> element to target with this control's label via its
-        // "for" attribute.  This element is also used to generate the
-        // synthetic "input" event to initialize the generated SVG and JSON.
-        var input;
-
-        // Add an input of the given type to the param control's label
-        function add_input_el(type, updater) {
-          var el = document.createElement('input');
-          param_label.appendChild(el);
-          input = el; // for generating synthetic input to init SVG
-
-          el.type = type;
-          el.id = `${param}-${type}`;
-          el.value = default_value;
-          el.addEventListener("input", updater);
-
-          for (const attr in config[control_type]) {
-            el.setAttribute(attr, config[control_type][attr]);
-          }
-        }
-
-        // Add min or max <span> to a slider's <label> contents
-        function add_slider_limit(attr) {
-          var el = document.createElement('span');
-          param_label.appendChild(el);
-
-          el.id = `${param}-${attr}`;
-          el.setAttribute('class', `slider-${attr}`);
-          el.textContent = config[control_type][attr];
-        }
-
-        // Main <input> callback for input events
-        function update_param(e) {
-          const value = e.target.value;
-          params[group][param] = value;
-          showParamsJson();
-          // dispatch the update to the associated SVG updater
-          if (typeof redraw[group] === "function") {
-            redraw[group](e);
-          } else if (typeof redraw[group][param] === "function") {
-            redraw[group][param](e);
-          }
-        }
-
-        if (control_type == 'color') {
-          add_input_el('color', update_param);
-
+        if (control_type == "gradstops") {
         } else {
-          // Link the range and number box inputs for the slider
-          function update_slider(e) {
-            update_sibling(e);
-            update_param(e);
-          }
-
-          add_slider_limit('min');
-          add_input_el('range', update_slider);
-          add_slider_limit('max');
-          add_input_el('number', update_slider);
+          var el = create_control_div(control_type, [group, param]);
+          group_div.appendChild(el);
         }
-
-        param_label.setAttribute('for', input.id);
-        input.dispatchEvent(new Event("input"));
 
       }
     }
