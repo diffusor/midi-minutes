@@ -14,11 +14,26 @@
       width: 4em;
       vertical-align: middle;
     }
+    input[type=color] {
+      width: 8em;
+      vertical-align: middle;
+    }
+    .gradstops-header {
+      display: inline-block;
+      width: 100%;
+      vertical-align: middle;
+      text-align: center;
+    }
     .param-label {
       display: inline-block;
       width: 8em;
       vertical-align: middle;
       text-align: right;
+    }
+    .pad {
+      display: inline-block;
+      width: 2em;
+      vertical-align: middle;
     }
     .slider-min {
       display: inline-block;
@@ -64,8 +79,8 @@
     // object to determine additional properties for the input controls.
     var params = {
       clock_face: {
-        color: "#FFFFFF",
-        center_radius: 8,
+        fill_color: "#FFFFFF",
+        inner_radius: 8,
         outer_radius: 98,
         keycount: 60,
         startkey: 1,
@@ -109,8 +124,8 @@
         minutes: 0,
         seconds: 0,
         gradstops: [
-          {color: "#000000", offset: 0, opacity: 100},
-          {color: "#000000", offset: 100, opacity: 0},
+          {offset: 0, opacity: 100, color: "#000000"},
+          {offset: 100, opacity: 0, color: "#000000"},
         ],
       },
       white_keys: {
@@ -121,8 +136,8 @@
         minutes: 0,
         seconds: 0,
         gradstops: [
-          {color: "#000000", offset: 0, opacity: 100},
-          {color: "#000000", offset: 100, opacity: 0},
+          {offset: 0, opacity: 100, color: "#000000"},
+          {offset: 100, opacity: 0, color: "#000000"},
         ],
       },
     };
@@ -131,6 +146,10 @@
       clock_face: function(e) {
         var outer_circle = document.getElementById('outer-circle');
         outer_circle.setAttribute("r", params.clock_face.outer_radius);
+        outer_circle.setAttribute("fill", params.clock_face.fill_color);
+
+        var inner_circle = document.getElementById('inner-circle');
+        inner_circle.setAttribute("r", params.clock_face.inner_radius);
       },
       minute_ticks: function(e) {},
       hour_ticks: function(e) {},
@@ -177,12 +196,30 @@
       return ident;
     }
 
-    function create_control_div(control_type, path) {
-      var group = path[0];
-      var param = path[path.length - 1];
+    // Handle nested objects according to a path list.
+    // Inspired by https://stackoverflow.com/a/22129960
+    function getPropByPath(o, path) {
+      return path.reduce((prev, cur) => prev && prev[cur], o);
+    }
+    function setPropByPath(o, path, value) {
+      return path.reduce((prev, curr, i) => {
+        return (i + 1 == path.length)
+          ? prev[curr] = value
+          : prev[curr] = prev[curr] || {};
+      }, o);
+    }
+
+    function add_pad(el) {
+      var pad = document.createElement('span');
+      el.appendChild(pad);
+      pad.setAttribute('class', 'pad');
+    }
+
+    function create_control_div(control_type, label, ...path) {
+      var path_str = path.join('-');
 
       var param_div = document.createElement('div');
-      param_div.id = `${param}-control`;
+      param_div.id = `${path_str}-control`;
       param_div.setAttribute('class', `param-control`);
 
       // The label also contains all linked input elements, allowing one to
@@ -194,7 +231,7 @@
       var span = document.createElement('span');
       param_label.appendChild(span);
       span.setAttribute('class', 'param-label');
-      span.textContent = wordify_ident(param);
+      span.textContent = label;
 
       // The <input> element to target with this control's label via its
       // "for" attribute.  This element is also used to generate the
@@ -208,8 +245,8 @@
         input = el; // for generating synthetic input to init SVG
 
         el.type = type;
-        el.id = `${param}-${type}`;
-        el.value = params[group][param];
+        el.id = `${path_str}-${type}`;
+        el.value = getPropByPath(params, path);
         el.addEventListener("input", updater);
 
         for (const attr in config[control_type]) {
@@ -222,7 +259,7 @@
         var el = document.createElement('span');
         param_label.appendChild(el);
 
-        el.id = `${param}-${attr}`;
+        el.id = `${path_str}-${attr}`;
         el.setAttribute('class', `slider-${attr}`);
         el.textContent = config[control_type][attr];
       }
@@ -230,17 +267,26 @@
       // Main <input> callback for input events
       function update_param(e) {
         const value = e.target.value;
-        params[group][param] = value;
+        setPropByPath(params, path, value);
         showParamsJson();
         // dispatch the update to the associated SVG updater
-        if (typeof redraw[group] === "function") {
-          redraw[group](e);
-        } else if (typeof redraw[group][param] === "function") {
-          redraw[group][param](e);
+        var curprop = redraw;
+        for (const pathidx in path) {
+          const pathbit = path[pathidx];
+          let nextprop = curprop[pathbit];
+          if (typeof nextprop === "function") {
+            // We found a redraw function - call it and stop the search
+            nextprop(e);
+            break;
+          } else {
+            // Descend to the next path-element depth in the redraw structure
+            curprop = nextprop;
+          }
         }
       }
 
       if (control_type == 'color') {
+        add_pad(param_label);
         add_input_el('color', update_param);
 
       } else {
@@ -262,14 +308,76 @@
       return param_div;
     }
 
+    function create_gradstops(...path) {
+      var stops_div = document.createElement('div');
+      stops_div.id = path.join('-');
+      stops_div.setAttribute('class', 'gradstops');
+
+      var span = document.createElement('span');
+      stops_div.appendChild(span);
+      span.id = path.join('-');
+      span.setAttribute('class', 'gradstops-header');
+      span.textContent = `${wordify_ident(path[0])} Gradient Stops`;
+
+      var stoplist = getPropByPath(params, path);
+      for (const stopidx in stoplist) {
+        add_gradstop_controls(stopidx);
+      }
+
+      function add_gradstop_controls(stopidx) {
+        var stop_controls_div = document.createElement('div');
+        stops_div.appendChild(stop_controls_div);
+        stop_controls_div.id = [...path, stopidx].join('-');
+        stop_controls_div.setAttribute('class', 'gradstop-controls');
+
+        let gradstop = stoplist[stopidx];
+        for (const control in gradstop) {
+          let el = create_control_div(control, `stop${stopidx} ${wordify_ident(control)}`,
+            ...path, stopidx, control);
+          stop_controls_div.appendChild(el);
+        }
+      }
+
+      add_pad(span);
+
+      var delstop_button = document.createElement('input');
+      span.appendChild(delstop_button);
+      delstop_button.type = 'button';
+      delstop_button.id = `${stops_div.id}-del`;
+      delstop_button.value = "-";
+      delstop_button.addEventListener('click', e => {
+        if (stoplist.length > 2) {
+          // Duplicate the last stop into the new one.
+          // TODO - Recover stashed elements
+          stoplist.pop(stoplist);
+          stops_div.removeChild(stops_div.lastChild);
+        }
+      });
+
+      var addstop_button = document.createElement('input');
+      span.appendChild(addstop_button);
+      addstop_button.type = 'button';
+      addstop_button.id = `${stops_div.id}-add`;
+      addstop_button.value = "+";
+      addstop_button.addEventListener('click', e => {
+        let new_stopidx = stoplist.length;
+        // TODO - stash the removed elements
+        stoplist.push({...stoplist[new_stopidx - 1]});
+        add_gradstop_controls(new_stopidx);
+      });
+
+      return stops_div;
+    }
+
     function add_controls_to_param_group(group, group_div) {
       for (const param in params[group]) {
-        const data = params[group][param];
         const control_type = param.replace(/.*_/, '');
 
         if (control_type == "gradstops") {
+          let el = create_gradstops(group, param);
+          group_div.appendChild(el);
         } else {
-          var el = create_control_div(control_type, [group, param]);
+          let el = create_control_div(control_type, wordify_ident(param), group, param);
           group_div.appendChild(el);
         }
 
@@ -286,8 +394,7 @@
 
         var group_label = document.createElement('label');
         group_div.appendChild(group_label);
-        var group_text = document.createTextNode(wordify_ident(group));
-        group_label.appendChild(group_text);
+        group_label.textContent = wordify_ident(group);
 
         add_controls_to_param_group(group, group_div);
       }
@@ -362,7 +469,8 @@
 
   <div>
     <svg id="logo" width="201" height="201" viewBox="-100 -100 201 201">
-      <circle id="outer-circle" cx="0" cy="0" r="40" stroke="green" stroke-width="4" fill="yellow" />
+      <circle id="outer-circle" cx="0" cy="0" r="40" stroke="black" stroke-width="4" />
+      <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
       <path d="M 0 20 l 0 20"
             stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/>
       <defs>
