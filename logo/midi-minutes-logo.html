@@ -275,17 +275,11 @@
       construct_param_controls();
 
       // hook up button actions
-      document.getElementById("save-svg-button").addEventListener("click", function() {
-        saveLogoSvg();
-      });
-
-      document.getElementById("show-params-button").addEventListener("click", function() {
-        showParamsJson();
-      });
-
-      document.getElementById("copy-params-button").addEventListener("click", function() {
-        copyParamsJson();
-      });
+      function set_click_handler(id, fn) {
+        document.getElementById(id).addEventListener("click", fn);
+      }
+      set_click_handler('save-svg-button', saveLogoSvg);
+      set_click_handler('copy-params-button', copyParamsJson);
     });
 
     // SVG saving code, modified from https://stackoverflow.com/a/46403589
@@ -369,12 +363,7 @@
 
     <div>
       <input type="button" id="save-svg-button" value="Save to SVG" />
-    </div>
-    <div>
-      <input type="button" id="show-params-button" value="Gen params JSON" />
-    </div>
-    <div>
-      <input type="button" id="copy-params-button" value="Copy params JSON to clipboard" />
+      <input type="button" id="copy-params-button" value="Copy JSON" />
     </div>
     <div id="params-json"> </div>
   </div>
