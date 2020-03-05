@@ -46,7 +46,8 @@
     .slider-min,
     .slider-max {
       display: inline-block;
-      vertical-align: middle;
+      vertical-align: middle; /* no effect in flexbox :( */
+      margin: 0.1em; /* setting a small margin helps vertial alignment */
     }
     .slider-min {
       width: 2em;
@@ -190,14 +191,13 @@
       clock_face: {
         size: function(e) {
           const s = params.clock_face.size;
-          var svg_el = document.getElementById('logo');
-          svg_el.setAttribute('width', s);
-          svg_el.setAttribute('height', s);
+          var el = document.getElementById('logo');
+          el.setAttribute('width', s);
+          el.setAttribute('height', s);
 
-          var scaleviews = document.getElementsByClassName("logo-scaled");
-          for (let i = 0; i < scaleviews.length; i++) {
-            scaleviews[i].setAttribute('viewBox', `0 0 ${s} ${s}`);
-          }
+          // Constrain the SVG size to its container, keep square.
+          // Warning - this had better converge! It recurses.
+          resquare_logo();
         },
 
         _else: function(e) {
@@ -281,11 +281,8 @@
 
     function update_sibling(e) {
       var el = e.target;
-      for (let i = 0; i < el.parentElement.children.length; i++) {
-        var child = el.parentElement.children[i];
-        if (child.type && child.type != el.type) {
-          child.value = el.value;
-        }
+      if ("other" in el) {
+        el.other.value = el.value;
       }
     }
 
@@ -404,9 +401,14 @@
           update_param(e);
         }
 
-        main_input = param_label_span.appendChild(add_input_el('number', update_slider));
+        main_input = add_input_el('number', update_slider);
+        other_input = add_input_el('range', update_slider);
+        main_input.other = other_input;
+        other_input.other = main_input;
+
+        param_div.appendChild(main_input);
         param_div.appendChild(add_slider_limit('min'));
-        param_div.appendChild(add_input_el('range', update_slider));
+        param_div.appendChild(other_input);
         param_div.appendChild(add_slider_limit('max'));
       }
 
@@ -598,6 +600,85 @@
       }
     }
 
+    // Set the logo size for a drag resize sequence.
+    // Note the logo ends up constrained to a square since the redraw
+    // function calls resquare_logo.
+    function resize_logo(e, w0, h0, dx, dy) {
+      // Use the greatest deviation to set the size
+      let delta = dx;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        delta = dy;
+      }
+      let new_size = Math.max(10, delta + w0);
+      //console.log({w0: w0, h0: h0, dx: dx, dy: dy, delta: delta, new_size: new_size});
+
+      // trigger the redraw
+      let main_input = document.getElementById("clock_face-size-number");
+      main_input.value = new_size;
+      main_input.dispatchEvent(new Event("input"));
+    }
+
+    // If the window or size are set such that the svg containing element
+    // falls out of square, constrain the logo size so it fits into a square again.
+    function resquare_logo() {
+      var el = document.getElementById('logo');
+      let actual_size = Math.min(el.scrollWidth, el.scrollHeight);
+      if (actual_size < params.clock_face.size) {
+        let main_input = document.getElementById("clock_face-size-number");
+        main_input.value = actual_size;
+        main_input.dispatchEvent(new Event("input"));
+      }
+    }
+
+    // Adapted from the "improved makeResizableDiv" entry here:
+    // https://medium.com/the-z/making-a-resizable-div-in-js-is-not-easy-as-you-think-bda19a1bc53d
+    function make_resizable(el, resize) {
+      var e0; // e0.target can be an SVG element!
+      var distX;
+      var distY;
+      var width0;
+      var height0;
+
+      el.addEventListener('mousedown', e => {
+        // If we hit the resize target, start resizing
+        const rect = el.getBoundingClientRect();
+        distX = rect.right - e.clientX;
+        distY = rect.bottom - e.clientY;
+        // resize target is a right triangle in bottom right of SVG
+        // TODO - use a resize tab element, get its width instead of 20
+        if (distX + distY < 20) {
+          console.log("resizing", e);
+          e.preventDefault();
+          e0 = e;
+          width0 = e.target.scrollWidth;
+          height0 = e.target.scrollHeight;
+          window.addEventListener('mousemove', drag_resize);
+          window.addEventListener('mouseup', stop_resize);
+        }
+      });
+
+      function drag_resize(e) {
+        const x0 = e0.clientX;
+        const y0 = e0.clientY;
+
+        const rect = document.body.getBoundingClientRect();
+        // Contain the drawing to the page
+        const x1 = Math.min(e.clientX, rect.right - distX);
+        const y1 = Math.min(e.clientY, rect.bottom - distY);
+        //console.log({x0: x0, y0: y0, x1: x1, y1: y1});
+
+        let dx = x1 - x0;
+        let dy = y1 - y0;
+
+        resize(e, width0, height0, dx, dy);
+      }
+
+      function stop_resize(e) {
+        window.removeEventListener('mousemove', drag_resize);
+        window.removeEventListener('mouseup', stop_resize);
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
       construct_geometry();
       construct_param_controls();
@@ -608,6 +689,8 @@
       }
       set_click_handler('save-svg-button', saveLogoSvg);
       set_click_handler('copy-params-button', copyParamsJson);
+      make_resizable(document.getElementById("logo"), resize_logo);
+      window.addEventListener("resize", resquare_logo);
     });
 
     // SVG saving code, modified from https://stackoverflow.com/a/46403589
@@ -672,10 +755,6 @@
 <body>
 
 <div class="wrapper">
-
-  <!-- TODO Resizing via mouse drag:
-    - https://stackoverflow.com/a/26233793
-    - https://stackoverflow.com/a/52454689 -->
   <div class="output">
     <svg id="logo"
         width="201" height="201" viewBox="-100 -100 200 200">
