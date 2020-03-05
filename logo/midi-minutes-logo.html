@@ -9,9 +9,12 @@
     svg {
       border: solid 1px grey;
     }
+    .param-label-span {
+      display: flex;
+    }
     input[type=range] {
-      width: 55%;
       vertical-align: middle;
+      flex: 1;
     }
     input[type=number] {
       width: 4em;
@@ -27,7 +30,7 @@
       vertical-align: middle;
       text-align: center;
     }
-    .param-label {
+    .param-label-text {
       display: inline-block;
       width: 8em;
       vertical-align: middle;
@@ -65,12 +68,13 @@
   <script type="text/javascript" defer>
     // Control configuration
     var config = {
-      radius: {step: 1, min: 0, max: 100},
+      size: {step: 1, min: 1, max: 1000},
+      radius: {step: 0.1, min: 0, max: 100},
       stroke: {step: 0.1, min: 0, max: 10},
-      width: {step: 0.1, min: 0, max: 10},
-      keycount: {step: 1, min: 3, max: 110},
+      width: {step: 0.1, min: 0, max: 50},
+      octaves: {step: 1, min: 1, max: 10},
       startkey: {step: 1, min: 1, max: 7},
-      hours: {step: 1, min: 0, max: 10},
+      hours: {step: 1, min: 0, max: 12},
       minutes: {step: 1, min: 0, max: 60},
       seconds: {step: 1, min: -60, max: 60},
       offset: {step: 1, min: 0, max: 100},
@@ -82,47 +86,59 @@
     // object to determine additional properties for the input controls.
     var params = {
       clock_face: {
+        size: 200,
         fill_color: "#FFFFFF",
         inner_radius: 8,
         outer_radius: 98,
-        keycount: 60,
-        startkey: 1,
-      },
-      minute_ticks: {
-        inner_radius: 93,
-        outer_radius: 98,
+        octaves: 5,
         stroke: 2,
       },
-      hour_ticks: {
-        inner_radius: 88,
+      minute_ticks: {
+        color: "#000000",
+        inner_width: 3,
+        inner_radius: 93,
+        middle_width: 3,
+        middle_radius: 97.5,
+        outer_width: 2,
         outer_radius: 98,
-        stroke: 3,
+      },
+      hour_ticks: {
+        color: "#000000",
+        inner_width: 4,
+        inner_radius: 88,
+        middle_width: 4,
+        middle_radius: 97.5,
+        outer_width: 2,
+        outer_radius: 98,
       },
       minute_hand: {
         color: "black",
-        inner_radius: 5,
-        middle_radius: 20,
-        outer_radius: 95,
         inner_width: 0,
+        inner_radius: 5,
         middle_width: 4,
+        middle_radius: 20,
         outer_width: 0,
+        outer_radius: 95,
         minutes: 25,
         seconds: 0,
       },
       hour_hand: {
         color: "black",
-        inner_radius: 5,
-        middle_radius: 20,
-        outer_radius: 95,
         inner_width: 0,
-        middle_width: 6,
+        inner_radius: 5,
+        middle_width: 9,
+        middle_radius: 20,
         outer_width: 0,
+        outer_radius: 65,
         hours: 0,
+        minutes: 0,
         seconds: 0,
       },
       black_keys: {
         color: "black",
+        inner_width: 6.8,
         inner_radius: 60,
+        outer_width: 9.9,
         outer_radius: 85,
         minutes: 0,
         seconds: 0,
@@ -133,7 +149,9 @@
       },
       white_keys: {
         color: "black",
+        inner_width: 2,
         inner_radius: 40,
+        outer_width: 2,
         outer_radius: 85,
         stroke: 2,
         minutes: 0,
@@ -146,24 +164,80 @@
     };
 
     var redraw = {
-      clock_face: function(e) {
-        var outer_circle = document.getElementById('outer-circle');
-        outer_circle.setAttribute("r", params.clock_face.outer_radius);
-        outer_circle.setAttribute("fill", params.clock_face.fill_color);
+      clock_face: {
+        size: function(e) {
+          const s = params.clock_face.size;
+          var svg_el = document.getElementById('logo');
+          svg_el.setAttribute('width', s);
+          svg_el.setAttribute('height', s);
 
-        var inner_circle = document.getElementById('inner-circle');
-        inner_circle.setAttribute("r", params.clock_face.inner_radius);
+          var scaleviews = document.getElementsByClassName("logo-scaled");
+          for (let i = 0; i < scaleviews.length; i++) {
+            scaleviews[i].setAttribute('viewBox', `0 0 ${s} ${s}`);
+          }
+        },
+
+        _else: function(e) {
+          var outer_circle = document.getElementById('outer-circle');
+          outer_circle.setAttribute("r", params.clock_face.outer_radius);
+          outer_circle.setAttribute("fill", params.clock_face.fill_color);
+
+          var inner_circle = document.getElementById('inner-circle');
+          inner_circle.setAttribute("r", params.clock_face.inner_radius);
+        },
       },
-      minute_ticks: function(e) {},
-      hour_ticks: function(e) {},
-      minute_hand: function(e) {},
-      hour_hand: function(e) {},
-      black_keys: function(e) {
-        var black_key_group = document.getElementById('black-key-group');
-        rotate_hand(black_key_group, params.black_keys);
-      },
-      white_keys: function(e) {},
+      hour_ticks: e => shape_ticks('hour-ticks', params.hour_ticks),
+      minute_ticks: e => shape_ticks('minute-ticks', params.minute_ticks),
+      minute_hand: e => redraw_hand(document.getElementById('minute-hand'), params.minute_hand),
+      hour_hand:   e => redraw_hand(document.getElementById('hour-hand'), params.hour_hand),
+      white_keys: e => shape_white_keys(),
+      black_keys: e => shape_black_keys(),
     };
+
+    function shape_white_keys() {
+      var white_key_group = document.getElementById('white-key-group');
+      var white_keys = white_key_group.children;
+      const g = params.white_keys;
+      for (let i = 0; i < white_keys.length; i++) {
+        key = white_keys[i];
+        draw_hand(key, g);
+      }
+    }
+
+    function shape_black_keys() {
+      var black_key_group = document.getElementById('black-key-group');
+      var black_keys = black_key_group.children;
+      const g = params.black_keys;
+      for (let i = 0; i < black_keys.length; i++) {
+        key = black_keys[i];
+        draw_hand(key, g);
+      }
+    }
+
+    function shape_ticks(ticks_id, g) {
+      var ticks_group = document.getElementById(ticks_id);
+      var ticks = ticks_group.children;
+      for (let i = 0; i < ticks.length; i++) {
+        draw_hand(ticks[i], g);
+      }
+    }
+
+    function redraw_hand(hand, g) {
+      draw_hand(hand, g);
+      rotate_hand(hand, g);
+    }
+
+    function draw_hand(hand, g) {
+      hand.setAttribute('fill', g.color);
+      hand.setAttribute('points',
+        `${g.inner_radius},${g.inner_width / 2}
+         ${g.middle_radius ? `${g.middle_radius},${g.middle_width / 2}` : ''}
+         ${g.outer_radius},${g.outer_width / 2}
+         ${g.outer_radius},${-(g.outer_width / 2)}
+         ${g.middle_radius ? `${g.middle_radius},${-(g.middle_width / 2)}` : ''}
+         ${g.inner_radius},${-(g.inner_width / 2)}
+        `);
+    }
 
     // Generate a transform on the given SVG element that will
     // rotate it to the parameter settings in the given group.
@@ -223,17 +297,24 @@
 
       var param_div = document.createElement('div');
       param_div.id = `${path_str}-control`;
-      param_div.setAttribute('class', `param-control`);
+      param_div.setAttribute('class', 'param-control');
 
       // The label also contains all linked input elements, allowing one to
       // click anywhere on the control line to focus the main input
       // (for sliders, this is the number box)
       var param_label = document.createElement('label');
       param_div.appendChild(param_label);
+      param_label.setAttribute('class', 'param-label');
+
+
+      var param_label_span = document.createElement('span');
+      param_label.appendChild(param_label_span);
+      param_label_span.setAttribute('class', 'param-label-span');
+
 
       var span = document.createElement('span');
-      param_label.appendChild(span);
-      span.setAttribute('class', 'param-label');
+      param_label_span.appendChild(span);
+      span.setAttribute('class', 'param-label-text');
       span.textContent = label;
 
       // The <input> element to target with this control's label via its
@@ -244,7 +325,7 @@
       // Add an input of the given type to the param control's label
       function add_input_el(type, updater) {
         var el = document.createElement('input');
-        param_label.appendChild(el);
+        param_label_span.appendChild(el);
         input = el; // for generating synthetic input to init SVG
 
         el.type = type;
@@ -260,7 +341,7 @@
       // Add min or max <span> to a slider's <label> contents
       function add_slider_limit(attr) {
         var el = document.createElement('span');
-        param_label.appendChild(el);
+        param_label_span.appendChild(el);
 
         el.id = `${path_str}-${attr}`;
         el.setAttribute('class', `slider-${attr}`);
@@ -275,7 +356,10 @@
         // dispatch the update to the associated SVG updater
         var curprop = redraw;
         for (const pathidx in path) {
-          const pathbit = path[pathidx];
+          let pathbit = path[pathidx];
+          if (!(pathbit in curprop)) {
+            pathbit = "_else";
+          }
           let nextprop = curprop[pathbit];
           if (typeof nextprop === "function") {
             // We found a redraw function - call it and stop the search
@@ -289,7 +373,7 @@
       }
 
       if (control_type == 'color') {
-        add_pad(param_label);
+        add_pad(param_label_span);
         add_input_el('color', update_param);
 
       } else {
@@ -393,7 +477,7 @@
       for (const group in params) {
         var group_div = document.createElement('div');
         config_div.appendChild(group_div);
-        group_div.id = group;
+        group_div.id = group + '-control';
 
         var group_label = document.createElement('label');
         group_div.appendChild(group_label);
@@ -403,7 +487,98 @@
       }
     }
 
+    function construct_geometry() {
+      // Hour ticks
+      var hour_ticks_el = document.getElementById('hour-ticks');
+      for (let i = 0; i < 12; i++) {
+        let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+        hour_ticks_el.appendChild(tick);
+        tick.id = `hour-tick-${i}`;
+        rotate_hand(tick, {hours: i});
+      }
+
+      // Minute ticks
+      var minute_ticks_el = document.getElementById('minute-ticks');
+      for (let i = 0; i < 60; i++) {
+        if (i % 5) {
+          let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+          minute_ticks_el.appendChild(tick);
+          tick.id = `minute-tick-${i}`;
+          rotate_hand(tick, {minutes: i});
+        }
+      }
+
+      const octaves = params.clock_face.octaves;
+      const octave_angle = (360.0 / octaves);
+      const keys_per_octave = 12;
+      const inner_key_angle = octave_angle / keys_per_octave;
+      const white_keys_per_octave = 7;
+      const black_keys_per_octave = 5;
+      const white_key_ids = [0,2,4,5,7,9,11];
+      const black_key_ids = [1,3,6,8,10];
+      const longcracks = [0, 5];
+      const longcracks_end = [0, 5, 12];
+
+      // White Keys
+      // These are implied by the cracks between the keys
+      var white_key_group_el = document.getElementById('white-key-group');
+      var num_white_keys = octaves * white_keys_per_octave;
+      // These are special-cased because we need to align the cracks to the ticks
+      for (let octave = 0; octave < octaves; octave++) {
+        let angles = [];
+        for (let longcrack in longcracks) {
+          let crack = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+          white_key_group_el.appendChild(crack);
+          crack.id = `white-key-${octave}-${longcracks[longcrack]}`;
+          let angle = -90.0;
+          angle += octave_angle * octave;
+          angle += inner_key_angle * longcracks[longcrack];
+          crack.setAttribute("transform", `rotate(${angle})`);
+          angles.push(angle);
+        }
+
+        angles.push(-90.0 + (octave_angle * (octave + 1)));
+        for (let c in longcracks) {
+          c = Number(c);
+          let numcracks = Math.floor((longcracks_end[c+1] - longcracks_end[c]) / 2.0);
+          let step_angle = (angles[c+1] - angles[c]) / (numcracks + 1.0);
+          //console.log({c: c, longcracks_endc: longcracks_end[c+1], numcracks: numcracks, octave: octave, step_angle: step_angle});
+
+          for (let i = 0; i < numcracks; i++) {
+            let crack = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+            white_key_group_el.appendChild(crack);
+            crack.id = `white-key-${octave}-${longcracks[c]}-${i}`;
+            let angle = angles[c];
+            angle += step_angle * (i+1);
+            console.log({id: crack.id, i: i, octave: octave, angle: angle});
+            crack.setAttribute("transform", `rotate(${angle})`);
+          }
+        }
+      }
+
+      // Black Keys
+      var black_key_group_el = document.getElementById('black-key-group');
+      // TODO If we want the octaves slider to work, we need to regenerate these on change
+      var num_black_keys = octaves * black_keys_per_octave;
+      for (let i = 0; i < num_black_keys; i++) {
+        let key = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+        black_key_group_el.appendChild(key);
+        key.id = `black-key-${i}`;
+
+        const octave = Math.floor(i / black_keys_per_octave);
+        let angle = -90.0;
+        // set the octave angle offset
+        angle += octave_angle * octave;
+        angle += inner_key_angle * black_key_ids[i % black_keys_per_octave];
+        angle += inner_key_angle * 0.5; // align edge
+        //console.log({bkey: i, octave: octave, octave_angle: octave_angle,
+        //  inner_key_angle: inner_key_angle, angle: angle});
+        key.setAttribute("transform", `rotate(${angle})`);
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
+      construct_geometry();
       construct_param_controls();
 
       // hook up button actions
@@ -418,8 +593,16 @@
     // To save as PNG, consider this: https://stackoverflow.com/a/44769098
     function saveSvg(svgEl, name) {
       svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+      // Inject the json config used to generate the SVG
+      var metadata_el = document.createElement('metadata');
+      svgEl.insertBefore(metadata_el, svgEl.childNodes[0]);
+      var annotation_el = document.createElement('annotation');
+      metadata_el.appendChild(annotation_el);
+      annotation_el.textContent = showParamsJson();
+
       var svgData = svgEl.outerHTML;
-      var preface = '<?xml version="1.0" standalone="no"?>\r\n';
+      var preface = '<?xml version="1.0" standalone="no"?>\n';
       var svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
       var svgUrl = URL.createObjectURL(svgBlob);
       var downloadLink = document.createElement("a");
@@ -428,6 +611,8 @@
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
+
+      svgEl.removeChild(metadata_el);
     }
 
     function saveLogoSvg() {
@@ -472,21 +657,41 @@
 
   <div>
     <svg id="logo"
-        width="201" height="201" viewBox="-100 -100 201 201">
+        width="201" height="201" viewBox="-100 -100 200 200">
 
-      <circle id="outer-circle" cx="0" cy="0" r="40" stroke="black" stroke-width="4" />
-      <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
+      <g id="clock-face">
+        <circle id="outer-circle" cx="0" cy="0" r="40" stroke="black" stroke-width="4" />
+        <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
+      </g>
+
+      <g id="hour-ticks" stroke-width="0">
+      </g>
+
+      <g id="minute-ticks" stroke-width="0">
+      </g>
+
+      <g id="hands" stroke-width="0">
+        <polygon id="minute-hand" />
+        <polygon id="hour-hand" />
+      </g>
+
+      <!--
       <path d="M 0 20 l 0 20"
-            stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/>
+            stroke="black" fill="green" stroke-width="2" stroke-opacity="0.5"/>
+            -->
       <defs>
         <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stop-color="red" stop-opacity="1" />
           <stop offset="100%" stop-color="green" stop-opacity="1" />
         </linearGradient>
       </defs>
+
+      <g id="white-key-group"
+         fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
+      </g>
+
       <g id="black-key-group"
          fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
-        <polygon points="40,1 80,2 80,-2, 40,-1" transform="rotate(0)"/>
       </g>
       <!--path d="M 10 315
                L 110 215
@@ -496,30 +701,14 @@
                L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
     </svg>
 
-    <svg id="logo-half"
-        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-        width="100" height="100" viewBox="0 0 201 201">
-      <use xlink:href="#logo" />
-    </svg>
-
-    <svg id="logo-quarter"
-        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-        width="50" height="50" viewBox="0 0 201 201">
-      <use xlink:href="#logo" />
-    </svg>
-
-    <svg id="logo-eigth"
-        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-        width="25" height="25" viewBox="0 0 201 201">
-      <use xlink:href="#logo" />
-    </svg>
-
+    <!-- Scaled version - obsolete now that we can adjust size
     <br />
-    <svg id="logo-big"
+    <svg id="logo-big" class="logo-scaled"
         xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-        width="400" height="400" viewBox="0 0 201 201">
+        width="400" height="400" viewBox="0 0 200 200">
       <use xlink:href="#logo" />
     </svg>
+    -->
 
     <div>
       <input type="button" id="save-svg-button" value="Save to SVG" />
