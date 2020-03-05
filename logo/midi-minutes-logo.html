@@ -14,43 +14,52 @@
       flex: 1;
     }
     input[type=number] {
-      width: 4em;
+      width: 6ch;
       vertical-align: middle;
     }
     input[type=color] {
-      width: 4em;
+      width: calc(6ch - 0.3ch);
       vertical-align: middle;
     }
+    .gradstops-button {
+      width: 3ch;
+      margin: 1px;
+    }
     .gradstops-header {
+      display: flex;
+    }
+    .gradstops-label-text {
       display: inline-block;
-      width: 100%;
+      width: 8rem;
+      font-weight: bold;
       vertical-align: middle;
-      text-align: center;
+      text-align: right;
+      margin-right: 0.5rem;
     }
     .param-label-text {
       display: inline-block;
-      width: 8em;
+      width: 8rem;
       vertical-align: middle;
       text-align: right;
-      margin-right: 0.5em;
+      margin-right: 0.5rem;
     }
     .pad {
       display: inline-block;
-      width: 2em;
+      width: 2rem;
       vertical-align: middle;
     }
     .slider-min,
     .slider-max {
       display: inline-block;
       vertical-align: middle; /* no effect in flexbox :( */
-      margin: 0.1em; /* setting a small margin helps vertial alignment */
+      margin: 0.1rem; /* setting a small margin helps vertial alignment */
     }
     .slider-min {
-      width: 2em;
+      width: 4ch;
       text-align: right;
     }
     .slider-max {
-      width: 3em;
+      width: 4ch;
       text-align: left;
     }
     body {
@@ -63,19 +72,30 @@
     .wrapper .config {
       flex: 1;
       overflow: auto;
-      min-width: 25em;
+      min-width: 25rem;
+    }
+    .param-group-control {
+      border: 1.2px solid gray;
+      border-bottom-width: 0.6px;
+      border-top-width: 0.6px;
+      padding: 0.2rem;
+    }
+    .param-group-header {
+      font-weight: bold;
     }
     .logo-wrapper {
       position: relative; /* Allow putting the resize tab over the logo */
       box-sizing: border-box;
     }
     .wrapper .logo-and-json {
+      padding: 2px;
       display: flex;
       flex-direction: column;
       height: calc(100vh - 10px);
       max-height: calc(100vh - 10px);
     }
     #logo {
+      padding: 2px;
       max-height: 100%;
       max-width: 100%;
       vertical-align: top;
@@ -91,7 +111,7 @@
     #params-json {
       flex: 1;
       overflow: auto;
-      min-height: 2em;
+      min-height: 2rem;
       font-family: monospace;
       white-space: pre-wrap;
     }
@@ -435,7 +455,11 @@
       stops_div.appendChild(span);
       span.id = path.join('-');
       span.setAttribute('class', 'gradstops-header');
-      span.textContent = `${wordify_ident(path[0])} Gradient Stops`;
+
+      var label_text = document.createElement('span');
+      span.appendChild(label_text);
+      label_text.setAttribute('class', 'gradstops-label-text');
+      label_text.textContent = `Gradient Stops`;
 
       var stoplist = getPropByPath(params, path);
       for (const stopidx in stoplist) {
@@ -456,12 +480,11 @@
         }
       }
 
-      add_pad(span);
-
       var delstop_button = document.createElement('input');
       span.appendChild(delstop_button);
       delstop_button.type = 'button';
       delstop_button.id = `${stops_div.id}-del`;
+      delstop_button.setAttribute('class', 'gradstops-button');
       delstop_button.value = "-";
       delstop_button.addEventListener('click', e => {
         if (stoplist.length > 2) {
@@ -469,6 +492,7 @@
           // TODO - Recover stashed elements
           stoplist.pop(stoplist);
           stops_div.removeChild(stops_div.lastChild);
+          showParamsJson();
         }
       });
 
@@ -476,6 +500,7 @@
       span.appendChild(addstop_button);
       addstop_button.type = 'button';
       addstop_button.id = `${stops_div.id}-add`;
+      addstop_button.setAttribute('class', 'gradstops-button');
       addstop_button.value = "+";
       addstop_button.addEventListener('click', e => {
         let new_stopidx = stoplist.length;
@@ -509,10 +534,12 @@
         var group_div = document.createElement('div');
         config_div.appendChild(group_div);
         group_div.id = group + '-control';
+        group_div.setAttribute('class', 'param-group-control');
 
         var group_label = document.createElement('label');
         group_div.appendChild(group_label);
         group_label.textContent = wordify_ident(group);
+        group_label.setAttribute('class', 'param-group-header');
 
         add_controls_to_param_group(group, group_div);
       }
