@@ -228,10 +228,14 @@
         _else: function(e) {
           var outer_circle = document.getElementById('outer-circle');
           outer_circle.setAttribute("r", params.clock_face.outer_radius);
-          outer_circle.setAttribute("fill", params.clock_face.fill_color);
+          outer_circle.setAttribute("stroke-width", params.clock_face.stroke);
 
           var inner_circle = document.getElementById('inner-circle');
           inner_circle.setAttribute("r", params.clock_face.inner_radius);
+
+          var clock_face = document.getElementById('clock-face');
+          clock_face.setAttribute("r", params.clock_face.outer_radius);
+          clock_face.setAttribute("fill", params.clock_face.fill_color);
         },
       },
       hour_ticks: e => shape_ticks('hour-ticks', params.hour_ticks),
@@ -817,33 +821,14 @@
     <div class="logo-wrapper" id="logo-wrapper">
       <svg id="logo"
           width="201" height="201" viewBox="-100 -100 200 200">
-
-        <g id="clock-face">
-          <circle id="outer-circle" cx="0" cy="0" r="40" stroke="black" stroke-width="4" />
-          <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
-        </g>
-
-        <g id="hour-ticks" stroke-width="0">
-        </g>
-
-        <g id="minute-ticks" stroke-width="0">
-        </g>
-
-        <g id="hands" stroke-width="0">
-          <polygon id="minute-hand" />
-          <polygon id="hour-hand" />
-        </g>
-
-        <!--
-        <path d="M 0 20 l 0 20"
-              stroke="black" fill="green" stroke-width="2" stroke-opacity="0.5"/>
-              -->
         <defs>
           <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="red" stop-opacity="1" />
             <stop offset="100%" stop-color="green" stop-opacity="1" />
           </linearGradient>
         </defs>
+
+        <circle id="clock-face" cx="0" cy="0" r="40" stroke-width="0" />
 
         <g id="white-key-group"
            fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
@@ -856,13 +841,20 @@
         <g id="black-key-group"
            fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
         </g>
-        <!--path d="M 10 315
-                 L 110 215
-                 A 30 50 0 0 1 162.55 162.45
-                 L 172.55 152.45
-                 A 30 50 -45 0 1 215.1 109.9
-                 L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
+
+        <g id="hour-ticks" stroke-width="0"> </g>
+        <g id="minute-ticks" stroke-width="0"> </g>
+
+        <circle id="outer-circle" cx="0" cy="0" r="40" fill-opacity="0%" stroke="black" stroke-width="4" />
+
+        <g id="hands" stroke-width="0">
+          <polygon id="minute-hand" />
+          <polygon id="hour-hand" />
+        </g>
+
+        <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
       </svg>
+
       <svg id="logo-resizer" class="resize-tab" viewBox="0 0 100 100">
         <polygon id="tab-triangle"
                  points="0,100 100,0 100,100"
