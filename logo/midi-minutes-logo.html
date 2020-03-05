@@ -21,7 +21,7 @@
       vertical-align: middle;
     }
     input[type=color] {
-      width: 8em;
+      width: 4em;
       vertical-align: middle;
     }
     .gradstops-header {
@@ -35,22 +35,24 @@
       width: 8em;
       vertical-align: middle;
       text-align: right;
+      margin-right: 0.5em;
     }
     .pad {
       display: inline-block;
       width: 2em;
       vertical-align: middle;
     }
-    .slider-min {
+    .slider-min,
+    .slider-max {
       display: inline-block;
-      width: 2em;
       vertical-align: middle;
+    }
+    .slider-min {
+      width: 2em;
       text-align: right;
     }
     .slider-max {
-      display: inline-block;
       width: 3em;
-      vertical-align: middle;
       text-align: left;
     }
     body {
@@ -337,16 +339,9 @@
       span.setAttribute('class', 'param-label-text');
       span.textContent = label;
 
-      // The <input> element to target with this control's label via its
-      // "for" attribute.  This element is also used to generate the
-      // synthetic "input" event to initialize the generated SVG and JSON.
-      var input;
-
       // Add an input of the given type to the param control's label
       function add_input_el(type, updater) {
         var el = document.createElement('input');
-        param_label_span.appendChild(el);
-        input = el; // for generating synthetic input to init SVG
 
         el.type = type;
         el.id = `${path_str}-${type}`;
@@ -356,16 +351,17 @@
         for (const attr in config[control_type]) {
           el.setAttribute(attr, config[control_type][attr]);
         }
+        return el;
       }
 
       // Add min or max <span> to a slider's <label> contents
       function add_slider_limit(attr) {
         var el = document.createElement('span');
-        param_label_span.appendChild(el);
 
         el.id = `${path_str}-${attr}`;
         el.setAttribute('class', `slider-${attr}`);
         el.textContent = config[control_type][attr];
+        return el;
       }
 
       // Main <input> callback for input events
@@ -392,9 +388,13 @@
         }
       }
 
+      // The <input> element to target with this control's label via its
+      // "for" attribute.  This element is also used to generate the
+      // synthetic "input" event to initialize the generated SVG and JSON.
+      let main_input;
+
       if (control_type == 'color') {
-        add_pad(param_label_span);
-        add_input_el('color', update_param);
+        main_input = param_label_span.appendChild(add_input_el('color', update_param));
 
       } else {
         // Link the range and number box inputs for the slider
@@ -403,14 +403,14 @@
           update_param(e);
         }
 
-        add_slider_limit('min');
-        add_input_el('range', update_slider);
-        add_slider_limit('max');
-        add_input_el('number', update_slider);
+        main_input = param_label_span.appendChild(add_input_el('number', update_slider));
+        param_label_span.appendChild(add_slider_limit('min'));
+        param_label_span.appendChild(add_input_el('range', update_slider));
+        param_label_span.appendChild(add_slider_limit('max'));
       }
 
-      param_label.setAttribute('for', input.id);
-      input.dispatchEvent(new Event("input"));
+      param_label.setAttribute('for', main_input.id);
+      main_input.dispatchEvent(new Event("input"));
 
       return param_div;
     }
@@ -671,10 +671,10 @@
 <body>
 
 <div class="wrapper">
-  <div class="config" id="config-control">
-  </div>
 
-
+  <!-- TODO Resizing via mouse drag:
+    - https://stackoverflow.com/a/26233793
+    - https://stackoverflow.com/a/52454689 -->
   <div class="output">
     <svg id="logo"
         width="201" height="201" viewBox="-100 -100 200 200">
@@ -735,6 +735,9 @@
       <input type="button" id="copy-params-button" value="Copy JSON" />
     </div>
     <div id="params-json"> </div>
+  </div>
+
+  <div class="config" id="config-control">
   </div>
 </div>
 
