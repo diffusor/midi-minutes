@@ -126,9 +126,7 @@
       width: {step: 0.1, min: 0, max: 50},
       octaves: {step: 1, min: 1, max: 10},
       startkey: {step: 1, min: 1, max: 7},
-      hours: {step: 1, min: 0, max: 12},
-      minutes: {step: 1, min: 0, max: 60},
-      seconds: {step: 1, min: -60, max: 60},
+      angle: {step: 1, min: 0, max: 360},
       offset: {step: 1, min: 0, max: 100},
       opacity: {step: 1, min: 0, max: 100},
     };
@@ -171,8 +169,7 @@
         middle_radius: 20,
         outer_width: 0,
         outer_radius: 95,
-        minutes: 25,
-        seconds: 0,
+        angle: 150,
       },
       hour_hand: {
         color: "black",
@@ -182,9 +179,7 @@
         middle_radius: 20,
         outer_width: 0,
         outer_radius: 65,
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
+        angle: 0,
       },
       black_keys: {
         color: "black",
@@ -192,8 +187,7 @@
         inner_radius: 60,
         outer_width: 9.9,
         outer_radius: 85,
-        minutes: 0,
-        seconds: 0,
+        angle: 0,
         gradstops: [
           {offset: 0, opacity: 100, color: "#000000"},
           {offset: 100, opacity: 0, color: "#000000"},
@@ -206,8 +200,7 @@
         outer_width: 2,
         outer_radius: 85,
         stroke: 2,
-        minutes: 0,
-        seconds: 0,
+        angle: 0,
         gradstops: [
           {offset: 0, opacity: 100, color: "#000000"},
           {offset: 100, opacity: 0, color: "#000000"},
@@ -304,17 +297,9 @@
     // rotate it to the parameter settings in the given group.
     // The SVG element is assumed to be drawn along the X axis,
     // to the right.
-    // The rotation is taken from the hours, minutes, and seconds
-    // parameters in the param group.
-    // * hours: moves 1/12th of the circle (30 degrees)
-    // * minutes: moves 1/60th of the circle (6 degrees)
-    // * seconds: moves 1/3600th of the circle (.1 degrees)
+    // The rotation is taken from the angle parameter.
     function rotate_hand(el, g) {
-      var angle = -90;
-      if ('hours' in g) { angle += Number(g.hours) * 360 / 12; }
-      if ('minutes' in g) { angle += Number(g.minutes) * 360 / 60; }
-      if ('seconds' in g) { angle += Number(g.seconds) * 0.1 ; }
-      el.setAttribute("transform", `rotate(${angle})`);
+      el.setAttribute("transform", `rotate(${g.angle - 90})`);
     }
 
     function update_sibling(e) {
@@ -566,7 +551,7 @@
         let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
         hour_ticks_el.appendChild(tick);
         tick.id = `hour-tick-${i}`;
-        rotate_hand(tick, {hours: i});
+        rotate_hand(tick, {angle: i * 360 / 12});
       }
 
       // Minute ticks
@@ -576,7 +561,7 @@
           let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
           minute_ticks_el.appendChild(tick);
           tick.id = `minute-tick-${i}`;
-          rotate_hand(tick, {minutes: i});
+          rotate_hand(tick, {angle: i * 360 / 60});
         }
       }
     }
