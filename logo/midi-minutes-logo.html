@@ -224,6 +224,14 @@
           el.setAttribute('height', s);
         },
 
+        octaves: function(e) {
+          // Remove the keys elements and set them up again.
+          remove_piano();
+          construct_piano();
+          shape_white_keys();
+          shape_black_keys();
+        },
+
         _else: function(e) {
           var outer_circle = document.getElementById('outer-circle');
           outer_circle.setAttribute("r", params.clock_face.outer_radius);
@@ -545,7 +553,7 @@
       }
     }
 
-    function construct_geometry() {
+    function construct_ticks() {
       // Hour ticks
       var hour_ticks_el = document.getElementById('hour-ticks');
       for (let i = 0; i < 12; i++) {
@@ -565,7 +573,15 @@
           rotate_hand(tick, {minutes: i});
         }
       }
+    }
 
+    // when changing octaves, it's easiest just to delete all the keys and start over
+    function remove_piano() {
+      document.getElementById('white-key-group').textContent = '';
+      document.getElementById('black-key-group').textContent = '';
+    }
+
+    function construct_piano() {
       const octaves = params.clock_face.octaves;
       const octave_angle = (360.0 / octaves);
       const keys_per_octave = 12;
@@ -708,7 +724,8 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-      construct_geometry();
+      construct_ticks();
+      construct_piano();
       construct_param_controls();
 
       // hook up button actions
@@ -728,7 +745,7 @@
 
       // Inject the json config used to generate the SVG
       var metadata_el = document.createElement('metadata');
-      svgEl.insertBefore(metadata_el, svgEl.childNodes[0]);
+      svgEl.insertBefore(metadata_el, svgEl.firstChild);
       var annotation_el = document.createElement('annotation');
       metadata_el.appendChild(annotation_el);
       annotation_el.textContent = showParamsJson();
