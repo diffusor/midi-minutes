@@ -142,15 +142,8 @@
         outer_radius: 98,
         octaves: 5,
         stroke: 2,
-      },
-      minute_ticks: {
-        color: "#000000",
-        inner_width: 3,
-        inner_radius: 93,
-        middle_width: 3,
-        middle_radius: 97.5,
-        outer_width: 2,
-        outer_radius: 98,
+        ticks_angle: 0,
+        piano_angle: 0,
       },
       hour_ticks: {
         color: "#000000",
@@ -161,15 +154,14 @@
         outer_width: 2,
         outer_radius: 98,
       },
-      minute_hand: {
-        color: "black",
-        inner_width: 0,
-        inner_radius: 5,
-        middle_width: 4,
-        middle_radius: 20,
-        outer_width: 0,
-        outer_radius: 95,
-        angle: 150,
+      minute_ticks: {
+        color: "#000000",
+        inner_width: 3,
+        inner_radius: 93,
+        middle_width: 3,
+        middle_radius: 97.5,
+        outer_width: 2,
+        outer_radius: 98,
       },
       hour_hand: {
         color: "black",
@@ -181,13 +173,22 @@
         outer_radius: 65,
         angle: 0,
       },
+      minute_hand: {
+        color: "black",
+        inner_width: 0,
+        inner_radius: 5,
+        middle_width: 4,
+        middle_radius: 20,
+        outer_width: 0,
+        outer_radius: 95,
+        angle: 150,
+      },
       black_keys: {
         color: "black",
         inner_width: 6.8,
         inner_radius: 60,
         outer_width: 9.9,
         outer_radius: 85,
-        angle: 0,
         gradstops: [
           {offset: 0, opacity: 100, color: "#000000"},
           {offset: 100, opacity: 0, color: "#000000"},
@@ -200,7 +201,6 @@
         outer_width: 2,
         outer_radius: 85,
         stroke: 2,
-        angle: 0,
         gradstops: [
           {offset: 0, opacity: 100, color: "#000000"},
           {offset: 100, opacity: 0, color: "#000000"},
@@ -217,12 +217,12 @@
           el.setAttribute('height', s);
         },
 
-        octaves: function(e) {
-          // Remove the keys elements and set them up again.
-          remove_piano();
-          construct_piano();
-          shape_white_keys();
-          shape_black_keys();
+        octaves: redraw_piano,
+        piano_angle: function(e) {
+          rotate_element(document.getElementById('piano-keys'), params.clock_face.piano_angle);
+        },
+        ticks_angle: function(e) {
+          rotate_element(document.getElementById('clock-ticks'), params.clock_face.ticks_angle);
         },
 
         _else: function(e) {
@@ -245,6 +245,14 @@
       white_keys: e => shape_white_keys(),
       black_keys: e => shape_black_keys(),
     };
+
+    function redraw_piano() {
+      // Remove the keys elements and set them up again.
+      remove_piano();
+      construct_piano();
+      shape_white_keys();
+      shape_black_keys();
+    }
 
     function shape_white_keys() {
       const g = params.white_keys;
@@ -282,7 +290,7 @@
 
     function redraw_hand(hand, g) {
       draw_hand(hand, g);
-      rotate_hand(hand, g);
+      rotate_element(hand, g.angle);
     }
 
     function draw_hand(hand, g) {
@@ -302,8 +310,8 @@
     // The SVG element is assumed to be drawn along the X axis,
     // to the right.
     // The rotation is taken from the angle parameter.
-    function rotate_hand(el, g) {
-      el.setAttribute("transform", `rotate(${g.angle - 90})`);
+    function rotate_element(el, angle) {
+      el.setAttribute("transform", `rotate(${angle - 90})`);
     }
 
     function update_sibling(e) {
@@ -555,7 +563,7 @@
         let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
         hour_ticks_el.appendChild(tick);
         tick.id = `hour-tick-${i}`;
-        rotate_hand(tick, {angle: i * 360 / 12});
+        rotate_element(tick, i * 360 / 12);
       }
 
       // Minute ticks
@@ -565,7 +573,7 @@
           let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
           minute_ticks_el.appendChild(tick);
           tick.id = `minute-tick-${i}`;
-          rotate_hand(tick, {angle: i * 360 / 60});
+          rotate_element(tick, i * 360 / 60);
         }
       }
     }
@@ -830,20 +838,24 @@
 
         <circle id="clock-face" cx="0" cy="0" r="40" stroke-width="0" />
 
-        <g id="white-key-group"
-           fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
+        <g id="piano-keys">
+          <g id="white-key-group"
+             fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
+          </g>
+
+          <g id="white-keycap-group"
+             fill="url(#grad1)" stroke-opacity="1" stroke-width="3" stroke="blue" >
+          </g>
+
+          <g id="black-key-group"
+             fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
+          </g>
         </g>
 
-        <g id="white-keycap-group"
-           fill="url(#grad1)" stroke-opacity="1" stroke-width="3" stroke="blue" >
+        <g id="clock-ticks">
+          <g id="hour-ticks" stroke-width="0"> </g>
+          <g id="minute-ticks" stroke-width="0"> </g>
         </g>
-
-        <g id="black-key-group"
-           fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
-        </g>
-
-        <g id="hour-ticks" stroke-width="0"> </g>
-        <g id="minute-ticks" stroke-width="0"> </g>
 
         <circle id="outer-circle" cx="0" cy="0" r="40" fill-opacity="0%" stroke="black" stroke-width="4" />
 
