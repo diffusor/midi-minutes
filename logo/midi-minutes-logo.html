@@ -53,13 +53,33 @@
       vertical-align: middle;
       text-align: left;
     }
+    body {
+      margin: 4px;
+    }
     .wrapper {
       display: flex;
+      height: calc(100vh - 10px);
     }
     .wrapper .config {
       flex: 1;
+      overflow: auto;
+      min-width: 25em;
+    }
+    .wrapper .output {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 10px);
+      max-height: calc(100vh - 10px);
+    }
+    .wrapper svg {
+      overflow: auto;
+      max-height: 100%;
+      max-width: 100%;
     }
     #params-json {
+      flex: 1;
+      overflow: auto;
+      min-height: 2em;
       font-family: monospace;
       white-space: pre-wrap;
     }
@@ -655,7 +675,7 @@
   </div>
 
 
-  <div>
+  <div class="output">
     <svg id="logo"
         width="201" height="201" viewBox="-100 -100 200 200">
 
@@ -717,8 +737,6 @@
     <div id="params-json"> </div>
   </div>
 </div>
-
-<br/>
 
 <!-- other svg examples from w3schools
 <svg width="400" height="100">
