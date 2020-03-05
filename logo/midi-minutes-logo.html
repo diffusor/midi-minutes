@@ -6,10 +6,6 @@
 <html>
 <head>
   <style type="text/css">
-    svg {
-      border: solid 1px grey;
-      margin: 1px;
-    }
     .param-control {
       display: flex;
     }
@@ -69,16 +65,28 @@
       overflow: auto;
       min-width: 25em;
     }
+    .logo-wrapper {
+      position: relative; /* Allow putting the resize tab over the logo */
+      box-sizing: border-box;
+    }
     .wrapper .logo-and-json {
       display: flex;
       flex-direction: column;
       height: calc(100vh - 10px);
       max-height: calc(100vh - 10px);
     }
-    .wrapper svg {
-      overflow: auto;
+    #logo {
       max-height: 100%;
       max-width: 100%;
+      vertical-align: top;
+    }
+    .resize-tab {
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      right: 0px;
+      bottom: 0px;
+      cursor: nwse-resize;
     }
     #params-json {
       flex: 1;
@@ -92,7 +100,7 @@
   <script type="text/javascript" defer>
     // Control configuration
     var config = {
-      size: {step: 1, min: 1, max: 1000},
+      size: {step: 1, min: 4, max: 1400},
       radius: {step: 0.1, min: 0, max: 100},
       stroke: {step: 0.1, min: 0, max: 10},
       width: {step: 0.1, min: 0, max: 50},
@@ -600,17 +608,26 @@
       }
     }
 
+    var exited_flat_logo_condition = false;
+
     // Set the logo size for a drag resize sequence.
     // Note the logo ends up constrained to a square since the redraw
     // function calls resquare_logo.
-    function resize_logo(e, w0, h0, dx, dy) {
-      // Use the greatest deviation to set the size
-      let delta = dx;
-      if (Math.abs(dy) > Math.abs(dx)) {
-        delta = dy;
+    function resize_logo(e, offsetX, offsetY) {
+      var el = document.getElementById('logo');
+      let sizeX = e.clientX - el.clientLeft + offsetX;
+      let sizeY = e.clientY - el.clientTop + offsetY;
+
+      var wrapper = document.getElementById('logo-wrapper');
+      if (wrapper.scrollWidth > wrapper.scrollHeight && !exited_flat_logo_condition) {
+        // Prevent odd jumping behavior when grabbing while flat
+        sizeX = 0;
+      } else {
+        exited_flat_logo_condition = true;
       }
-      let new_size = Math.max(10, delta + w0);
-      //console.log({w0: w0, h0: h0, dx: dx, dy: dy, delta: delta, new_size: new_size});
+
+      const new_size = Math.min(Math.max(sizeX, sizeY, config.size.min), config.size.max);
+      //console.log(`mouse: ${e.clientX},${e.clientY}; topleft: ${el.clientLeft},${el.clientTop}; offset: ${offsetX},${offsetY}, sizeXY: ${sizeX},${sizeY}, new_size: ${new_size}`);
 
       // trigger the redraw
       let main_input = document.getElementById("clock_face-size-number");
@@ -633,44 +650,27 @@
     // Adapted from the "improved makeResizableDiv" entry here:
     // https://medium.com/the-z/making-a-resizable-div-in-js-is-not-easy-as-you-think-bda19a1bc53d
     function make_resizable(el, resize) {
-      var e0; // e0.target can be an SVG element!
-      var distX;
-      var distY;
-      var width0;
-      var height0;
+      // Offset from the lower right corner of the div containing the logo.
+      // The mouse position plus this offset describes the intersection
+      // of two bounding lines that constrain the logo
+      var offsetX;
+      var offsetY;
 
       el.addEventListener('mousedown', e => {
-        // If we hit the resize target, start resizing
-        const rect = el.getBoundingClientRect();
-        distX = rect.right - e.clientX;
-        distY = rect.bottom - e.clientY;
-        // resize target is a right triangle in bottom right of SVG
-        // TODO - use a resize tab element, get its width instead of 20
-        if (distX + distY < 20) {
-          console.log("resizing", e);
-          e.preventDefault();
-          e0 = e;
-          width0 = e.target.scrollWidth;
-          height0 = e.target.scrollHeight;
-          window.addEventListener('mousemove', drag_resize);
-          window.addEventListener('mouseup', stop_resize);
-        }
+        // snap offsetX and offsetY - we want to keep the resize tab at this position
+        // subtract from el.clientWidth and el.clientHeight to get offset into SVG
+        offsetX = el.clientWidth - e.offsetX;
+        offsetY = el.clientHeight - e.offsetY;
+        //console.log("mousedown", e);
+        exited_flat_logo_condition = false; // hack for resizing when tiny
+
+        e.preventDefault();
+        window.addEventListener('mousemove', drag_resize);
+        window.addEventListener('mouseup', stop_resize);
       });
 
       function drag_resize(e) {
-        const x0 = e0.clientX;
-        const y0 = e0.clientY;
-
-        const rect = document.body.getBoundingClientRect();
-        // Contain the drawing to the page
-        const x1 = Math.min(e.clientX, rect.right - distX);
-        const y1 = Math.min(e.clientY, rect.bottom - distY);
-        //console.log({x0: x0, y0: y0, x1: x1, y1: y1});
-
-        let dx = x1 - x0;
-        let dy = y1 - y0;
-
-        resize(e, width0, height0, dx, dy);
+        resize(e, offsetX, offsetY);
       }
 
       function stop_resize(e) {
@@ -690,7 +690,7 @@
       }
       set_click_handler('save-svg-button', saveLogoSvg);
       set_click_handler('copy-params-button', copyParamsJson);
-      make_resizable(document.getElementById("logo"), resize_logo);
+      make_resizable(document.getElementById("logo-resizer"), resize_logo);
       window.addEventListener("resize", resquare_logo);
     });
 
@@ -757,7 +757,7 @@
 
 <div class="wrapper">
   <div class="logo-and-json">
-    <div class="logo-wrapper">
+    <div class="logo-wrapper" id="logo-wrapper">
       <svg id="logo"
           width="201" height="201" viewBox="-100 -100 200 200">
 
@@ -801,6 +801,12 @@
                  L 172.55 152.45
                  A 30 50 -45 0 1 215.1 109.9
                  L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
+      </svg>
+      <svg id="logo-resizer" class="resize-tab" viewBox="0 0 100 100">
+        <polygon id="tab-triangle"
+                 points="0,100 100,0 100,100"
+                 stroke="0"
+                 fill="gray" />
       </svg>
     </div>
 
