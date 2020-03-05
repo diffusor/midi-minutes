@@ -8,8 +8,9 @@
   <style type="text/css">
     svg {
       border: solid 1px grey;
+      margin: 1px;
     }
-    .param-label-span {
+    .param-control {
       display: flex;
     }
     input[type=range] {
@@ -56,7 +57,7 @@
       text-align: left;
     }
     body {
-      margin: 4px;
+      margin: 1px;
     }
     .wrapper {
       display: flex;
@@ -404,9 +405,9 @@
         }
 
         main_input = param_label_span.appendChild(add_input_el('number', update_slider));
-        param_label_span.appendChild(add_slider_limit('min'));
-        param_label_span.appendChild(add_input_el('range', update_slider));
-        param_label_span.appendChild(add_slider_limit('max'));
+        param_div.appendChild(add_slider_limit('min'));
+        param_div.appendChild(add_input_el('range', update_slider));
+        param_div.appendChild(add_slider_limit('max'));
       }
 
       param_label.setAttribute('for', main_input.id);
