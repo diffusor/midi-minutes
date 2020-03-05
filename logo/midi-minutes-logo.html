@@ -250,13 +250,19 @@
     };
 
     function shape_white_keys() {
+      const g = params.white_keys;
+
       var white_key_group = document.getElementById('white-key-group');
       var white_keys = white_key_group.children;
-      const g = params.white_keys;
       for (let i = 0; i < white_keys.length; i++) {
         key = white_keys[i];
         draw_hand(key, g);
       }
+
+      var white_keycap_group = document.getElementById('white-keycap-group');
+      white_keycap_group.setAttribute('transform', `scale(${g.inner_radius})`);
+      white_keycap_group.setAttribute('stroke-width', g.stroke / 100);
+      white_keycap_group.setAttribute('stroke', g.color);
     }
 
     function shape_black_keys() {
@@ -578,6 +584,7 @@
     // when changing octaves, it's easiest just to delete all the keys and start over
     function remove_piano() {
       document.getElementById('white-key-group').textContent = '';
+      document.getElementById('white-keycap-group').textContent = '';
       document.getElementById('black-key-group').textContent = '';
     }
 
@@ -587,67 +594,88 @@
       const keys_per_octave = 12;
       const inner_key_angle = octave_angle / keys_per_octave;
       const white_keys_per_octave = 7;
+      const white_key_angle = octave_angle / white_keys_per_octave;
       const black_keys_per_octave = 5;
       const white_key_ids = [0,2,4,5,7,9,11];
       const black_key_ids = [1,3,6,8,10];
-      const longcracks = [0, 5];
-      const longcracks_end = [0, 5, 12];
+
+      //  |                               ,
+      //  |                            ,  |
+      //  |                         ,     |\      r = d + s
+      //  |                      ,        |~      h = r sin a
+      //  |               r   ,           |a\     d = r cos a
+      //  |                ,              |       s/h = h/d => s = h^2/d
+      //  |             ,               h |  \
+      //  |          ,                    |       s/r = (sin a)^2 / (cos a)
+      //  |       ,                       |   \   normalize to r = 1
+      //  |    ,                          |       s = (1 - cos(2*a)) / cos(a)
+      //  | ,  )a = 1/2 key spread        |    \
+      //  +-------------------------------+-----
+      //   '--------------.--------------' '-.-'
+      //                  d                  s
+      let a = (white_key_angle * Math.PI / 180) / 2; // alpha
+      let h = Math.sin(a);
+      let d = Math.cos(a);
 
       // White Keys
       // These are implied by the cracks between the keys
       var white_key_group_el = document.getElementById('white-key-group');
+      var white_keycap_group_el = document.getElementById('white-keycap-group');
+      var black_key_group_el = document.getElementById('black-key-group');
       var num_white_keys = octaves * white_keys_per_octave;
+
       // These are special-cased because we need to align the cracks to the ticks
       for (let octave = 0; octave < octaves; octave++) {
-        let angles = [];
-        for (let longcrack in longcracks) {
+        // white keys
+        for (const key in white_key_ids) {
+          // Construct the spaces between the keys
           let crack = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
           white_key_group_el.appendChild(crack);
-          crack.id = `white-key-${octave}-${longcracks[longcrack]}`;
+          crack.id = `white-key-${octave}-${key}`;
           let angle = -90.0;
           angle += octave_angle * octave;
-          angle += inner_key_angle * longcracks[longcrack];
+          angle += white_key_angle * key;
           crack.setAttribute("transform", `rotate(${angle})`);
-          angles.push(angle);
+
+          // Construct the key ends
+          let end = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+          white_keycap_group_el.appendChild(end);
+          end.id = `white-key-end-${octave}-${key}`;
+          // This causes the stroke size to not even scale when scaling the whole svg!
+          //end.setAttribute('vector-effect', 'non-scaling-stroke');
+          end.setAttribute('transform', `rotate(${angle + white_key_angle / 2})`);
+          end.setAttribute('x1', d);
+          end.setAttribute('y1', -h);
+          end.setAttribute('x2', d);
+          end.setAttribute('y2', h);
         }
 
-        angles.push(-90.0 + (octave_angle * (octave + 1)));
-        for (let c in longcracks) {
-          c = Number(c);
-          let numcracks = Math.floor((longcracks_end[c+1] - longcracks_end[c]) / 2.0);
-          let step_angle = (angles[c+1] - angles[c]) / (numcracks + 1.0);
-          //console.log({c: c, longcracks_endc: longcracks_end[c+1], numcracks: numcracks, octave: octave, step_angle: step_angle});
-
-          for (let i = 0; i < numcracks; i++) {
-            let crack = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
-            white_key_group_el.appendChild(crack);
-            crack.id = `white-key-${octave}-${longcracks[c]}-${i}`;
-            let angle = angles[c];
-            angle += step_angle * (i+1);
-            console.log({id: crack.id, i: i, octave: octave, angle: angle});
-            crack.setAttribute("transform", `rotate(${angle})`);
+        // black keys
+        let groupangle = white_key_angle * 3; // (3 white, 2 black)
+        let numkeys = 5;
+        let baseangle = 0;
+        let key_id_offset = 0;
+        for (const key_id in black_key_ids) {
+          if (key_id == 2) {
+            // Split evenly between the keys in the group of 4 whites
+            baseangle = groupangle;
+            groupangle = white_key_angle * 4; // (4 white, 3 black)
+            numkeys = 7;
+            key_id_offset = 2;
           }
+
+          var bkey = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+          black_key_group_el.appendChild(bkey);
+          bkey.id = `black-key-${key_id}`;
+
+          let inner_key_angle = groupangle / numkeys;
+
+          let angle = -90.0;
+          angle += octave_angle * octave;
+          angle += baseangle;
+          angle += inner_key_angle * (((key_id - key_id_offset) * 2) + 1.5);
+          bkey.setAttribute("transform", `rotate(${angle})`);
         }
-      }
-
-      // Black Keys
-      var black_key_group_el = document.getElementById('black-key-group');
-      // TODO If we want the octaves slider to work, we need to regenerate these on change
-      var num_black_keys = octaves * black_keys_per_octave;
-      for (let i = 0; i < num_black_keys; i++) {
-        let key = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
-        black_key_group_el.appendChild(key);
-        key.id = `black-key-${i}`;
-
-        const octave = Math.floor(i / black_keys_per_octave);
-        let angle = -90.0;
-        // set the octave angle offset
-        angle += octave_angle * octave;
-        angle += inner_key_angle * black_key_ids[i % black_keys_per_octave];
-        angle += inner_key_angle * 0.5; // align edge
-        //console.log({bkey: i, octave: octave, octave_angle: octave_angle,
-        //  inner_key_angle: inner_key_angle, angle: angle});
-        key.setAttribute("transform", `rotate(${angle})`);
       }
     }
 
@@ -833,11 +861,15 @@
         </defs>
 
         <g id="white-key-group"
-           fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
+           fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
+        </g>
+
+        <g id="white-keycap-group"
+           fill="url(#grad1)" stroke-opacity="1" stroke-width="3" stroke="blue" >
         </g>
 
         <g id="black-key-group"
-           fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
+           fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
         </g>
         <!--path d="M 10 315
                  L 110 215
