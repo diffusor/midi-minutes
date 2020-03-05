@@ -69,7 +69,7 @@
       overflow: auto;
       min-width: 25em;
     }
-    .wrapper .output {
+    .wrapper .logo-and-json {
       display: flex;
       flex-direction: column;
       height: calc(100vh - 10px);
@@ -194,10 +194,6 @@
           var el = document.getElementById('logo');
           el.setAttribute('width', s);
           el.setAttribute('height', s);
-
-          // Constrain the SVG size to its container, keep square.
-          // Warning - this had better converge! It recurses.
-          resquare_logo();
         },
 
         _else: function(e) {
@@ -405,6 +401,10 @@
         other_input = add_input_el('range', update_slider);
         main_input.other = other_input;
         other_input.other = main_input;
+        if (control_type == 'size') {
+          main_input.addEventListener("change", resquare_logo);
+          other_input.addEventListener("change", resquare_logo);
+        }
 
         param_div.appendChild(main_input);
         param_div.appendChild(add_slider_limit('min'));
@@ -676,6 +676,7 @@
       function stop_resize(e) {
         window.removeEventListener('mousemove', drag_resize);
         window.removeEventListener('mouseup', stop_resize);
+        resquare_logo();
       }
     }
 
@@ -755,51 +756,53 @@
 <body>
 
 <div class="wrapper">
-  <div class="output">
-    <svg id="logo"
-        width="201" height="201" viewBox="-100 -100 200 200">
+  <div class="logo-and-json">
+    <div class="logo-wrapper">
+      <svg id="logo"
+          width="201" height="201" viewBox="-100 -100 200 200">
 
-      <g id="clock-face">
-        <circle id="outer-circle" cx="0" cy="0" r="40" stroke="black" stroke-width="4" />
-        <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
-      </g>
+        <g id="clock-face">
+          <circle id="outer-circle" cx="0" cy="0" r="40" stroke="black" stroke-width="4" />
+          <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
+        </g>
 
-      <g id="hour-ticks" stroke-width="0">
-      </g>
+        <g id="hour-ticks" stroke-width="0">
+        </g>
 
-      <g id="minute-ticks" stroke-width="0">
-      </g>
+        <g id="minute-ticks" stroke-width="0">
+        </g>
 
-      <g id="hands" stroke-width="0">
-        <polygon id="minute-hand" />
-        <polygon id="hour-hand" />
-      </g>
+        <g id="hands" stroke-width="0">
+          <polygon id="minute-hand" />
+          <polygon id="hour-hand" />
+        </g>
 
-      <!--
-      <path d="M 0 20 l 0 20"
-            stroke="black" fill="green" stroke-width="2" stroke-opacity="0.5"/>
-            -->
-      <defs>
-        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="red" stop-opacity="1" />
-          <stop offset="100%" stop-color="green" stop-opacity="1" />
-        </linearGradient>
-      </defs>
+        <!--
+        <path d="M 0 20 l 0 20"
+              stroke="black" fill="green" stroke-width="2" stroke-opacity="0.5"/>
+              -->
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="red" stop-opacity="1" />
+            <stop offset="100%" stop-color="green" stop-opacity="1" />
+          </linearGradient>
+        </defs>
 
-      <g id="white-key-group"
-         fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
-      </g>
+        <g id="white-key-group"
+           fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
+        </g>
 
-      <g id="black-key-group"
-         fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
-      </g>
-      <!--path d="M 10 315
-               L 110 215
-               A 30 50 0 0 1 162.55 162.45
-               L 172.55 152.45
-               A 30 50 -45 0 1 215.1 109.9
-               L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
-    </svg>
+        <g id="black-key-group"
+           fill="url(#grad1)" stroke-opacity="1" stroke-width="4" stroke-color="blue" >
+        </g>
+        <!--path d="M 10 315
+                 L 110 215
+                 A 30 50 0 0 1 162.55 162.45
+                 L 172.55 152.45
+                 A 30 50 -45 0 1 215.1 109.9
+                 L 315 10" stroke="black" fill="green" stroke-width="2" fill-opacity="0.5"/-->
+      </svg>
+    </div>
 
     <!-- Scaled version - obsolete now that we can adjust size
     <br />
