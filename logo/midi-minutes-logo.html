@@ -14,12 +14,15 @@
       flex: 1;
     }
     input[type=number] {
-      width: 6ch;
+      width: 7ch;
       vertical-align: middle;
     }
     input[type=color] {
-      width: calc(6ch - 0.3ch);
+      width: calc(7ch - 0.3ch);
       vertical-align: middle;
+    }
+    #run-clock-button {
+      width: 3rem;
     }
     .gradstops-button {
       width: 3ch;
@@ -129,6 +132,7 @@
       angle: {step: 1, min: 0, max: 360},
       offset: {step: 1, min: 0, max: 100},
       opacity: {step: 1, min: 0, max: 100},
+      interval: {step: 1, min: 25, max: 1000},
     };
 
     // Slider-controlled logo parameters
@@ -144,6 +148,7 @@
         stroke: 2,
         ticks_angle: 0,
         piano_angle: 0,
+        ms_interval: 1000,
       },
       hour_ticks: {
         color: "#000000",
@@ -180,8 +185,16 @@
         middle_width: 4,
         middle_radius: 20,
         outer_width: 0,
-        outer_radius: 95,
+        outer_radius: 93,
         angle: 150,
+      },
+      second_hand: {
+        color: "#FF0000",
+        inner_width: 1.5,
+        inner_radius: 5,
+        outer_width: 1.5,
+        outer_radius: 94,
+        angle: 200,
       },
       black_keys: {
         color: "black",
@@ -240,8 +253,9 @@
       },
       hour_ticks: e => shape_ticks('hour-ticks', params.hour_ticks),
       minute_ticks: e => shape_ticks('minute-ticks', params.minute_ticks),
-      minute_hand: e => redraw_hand(document.getElementById('minute-hand'), params.minute_hand),
       hour_hand:   e => redraw_hand(document.getElementById('hour-hand'), params.hour_hand),
+      minute_hand: e => redraw_hand(document.getElementById('minute-hand'), params.minute_hand),
+      second_hand: e => redraw_hand(document.getElementById('second-hand'), params.second_hand),
       white_keys: e => shape_white_keys(),
       black_keys: e => shape_black_keys(),
     };
@@ -759,9 +773,49 @@
       }
       set_click_handler('save-svg-button', saveLogoSvg);
       set_click_handler('copy-params-button', copyParamsJson);
+      set_click_handler('run-clock-button', toggleClockRun);
+
+      // PianoClock logo resize support
       make_resizable(document.getElementById("logo-resizer"), resize_logo);
       window.addEventListener("resize", resquare_logo);
     });
+
+    var interval_id = null;
+    function toggleClockRun() {
+      var button = document.getElementById('run-clock-button');
+      if (interval_id === null) {
+        // It's a clock!
+        set_time();
+        interval_id = window.setInterval(set_time, params.clock_face.ms_interval /*ms*/);
+        button.value = "Stop!";
+      } else {
+        window.clearInterval(interval_id);
+        interval_id = null;
+        button.value = "Go!";
+      }
+    }
+
+    function set_time() {
+      // using trick from https://stackoverflow.com/a/10944417
+      // to get ms since midnight
+      const now = new Date();
+      const then = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0);
+
+      let s = (now.getTime() - then.getTime()) / 1000; // seconds since midnight
+      if (params.clock_face.ms_interval == 1000) {
+        s = Math.floor(s);
+      }
+      //console.log(s);
+      set_hand("hour_hand-angle-number", s * 360 / 3600 / 12);
+      set_hand("minute_hand-angle-number", s * 360 / 3600);
+      set_hand("second_hand-angle-number", s * 360 / 60);
+
+      function set_hand(id, angle) {
+        let hour_number = document.getElementById(id);
+        hour_number.value = angle % 360;
+        hour_number.dispatchEvent(new Event("input"));
+      }
+    }
 
     // SVG saving code, modified from https://stackoverflow.com/a/46403589
     // To save as PNG, consider this: https://stackoverflow.com/a/44769098
@@ -860,8 +914,9 @@
         <circle id="outer-circle" cx="0" cy="0" r="40" fill-opacity="0%" stroke="black" stroke-width="4" />
 
         <g id="hands" stroke-width="0">
-          <polygon id="minute-hand" />
           <polygon id="hour-hand" />
+          <polygon id="minute-hand" />
+          <polygon id="second-hand" />
         </g>
 
         <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
@@ -887,6 +942,7 @@
     <div>
       <input type="button" id="save-svg-button" value="Save to SVG" />
       <input type="button" id="copy-params-button" value="Copy JSON" />
+      <input type="button" id="run-clock-button" value="Go" />
     </div>
     <div id="params-json"> </div>
   </div>
@@ -894,38 +950,6 @@
   <div class="config" id="config-control">
   </div>
 </div>
-
-<!-- other svg examples from w3schools
-<svg width="400" height="100">
-  <rect width="400" height="100" style="fill:rgb(0,0,255);stroke-width:10;stroke:rgb(0,0,0)" />
-</svg>
-<br/>
-
-<svg width="400" height="180">
-  <rect x="50" y="20" rx="20" ry="20" width="150" height="150"
-  style="fill:red;stroke:black;stroke-width:5;opacity:0.5" />
-</svg>
-<br/>
-
-<svg width="300" height="200">
-  <polygon points="100,10 40,198 190,78 10,78 160,198"
-  style="fill:lime;stroke:purple;stroke-width:5;fill-rule:evenodd;" />
-</svg>
-<br/>
-
-<svg height="130" width="500">
-  <defs>
-    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="red" stop-opacity="1" />
-      <stop offset="100%" stop-color="green" stop-opacity="1" />
-    </linearGradient>
-  </defs>
-  <ellipse cx="100" cy="70" rx="85" ry="55" fill="url(#grad2)" />
-  <text fill="#ffffff" font-size="45" font-family="Verdana" x="45" y="86">!SVG</text>
-  Sorry, your browser does not support inline SVG.
-</svg>
-<br/>
--->
 
 </body>
 </html>
