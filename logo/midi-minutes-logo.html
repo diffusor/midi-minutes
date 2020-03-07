@@ -834,14 +834,12 @@
         s = Math.floor(s);
       }
       //console.log(s);
-      set_hand("hour_hand-angle-number", s * 360 / 3600 / 12);
-      set_hand("minute_hand-angle-number", s * 360 / 3600);
-      set_hand("second_hand-angle-number", s * 360 / 60);
+      set_hand("hour-hand", s * 360 / 3600 / 12);
+      set_hand("minute-hand", s * 360 / 3600);
+      set_hand("second-hand", s * 360 / 60);
 
       function set_hand(id, angle) {
-        let hour_number = document.getElementById(id);
-        hour_number.value = angle % 360;
-        hour_number.dispatchEvent(new Event("input"));
+        rotate_element(document.getElementById(id), angle);
       }
     }
 
