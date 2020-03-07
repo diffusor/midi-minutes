@@ -809,17 +809,22 @@
     });
 
     var interval_id = null;
-    function toggleClockRun() {
+    function toggleClockRun(e) {
       var button = document.getElementById('run-clock-button');
       if (interval_id === null) {
-        // It's a clock!
+        // Start the clock running
         set_time();
         interval_id = window.setInterval(set_time, params.clock_face.ms_interval /*ms*/);
         button.value = "Stop!";
       } else {
+        // Stop the clock and reset the hands
+        // TODO make it configurable whether the hands reset or the params stick
         window.clearInterval(interval_id);
         interval_id = null;
         button.value = "Go!";
+        redraw.hour_hand.angle(e);
+        redraw.minute_hand.angle(e);
+        redraw.second_hand.angle(e);
       }
     }
 
