@@ -152,23 +152,26 @@
         piano_angle: 0,
         ms_interval: 1000,
       },
-      hour_ticks: {
-        color: "#000000",
-        inner_width: 4,
-        inner_radius: 88,
-        middle_width: 4,
-        middle_radius: 97.5,
-        outer_width: 2,
-        outer_radius: 98,
-      },
-      minute_ticks: {
-        color: "#000000",
-        inner_width: 3,
-        inner_radius: 93,
-        middle_width: 3,
-        middle_radius: 97.5,
-        outer_width: 2,
-        outer_radius: 98,
+      tick_marks: {
+        angle: 0,
+        hour_ticks: {
+          color: "#000000",
+          inner_width: 4,
+          inner_radius: 88,
+          middle_width: 4,
+          middle_radius: 97.5,
+          outer_width: 2,
+          outer_radius: 98,
+        },
+        minute_ticks: {
+          color: "#000000",
+          inner_width: 3,
+          inner_radius: 93,
+          middle_width: 3,
+          middle_radius: 97.5,
+          outer_width: 2,
+          outer_radius: 98,
+        },
       },
       hour_hand: {
         color: "black",
@@ -253,8 +256,13 @@
           clock_face.setAttribute("fill", params.clock_face.fill_color);
         },
       },
-      hour_ticks: e => shape_ticks('hour-ticks', params.hour_ticks),
-      minute_ticks: e => shape_ticks('minute-ticks', params.minute_ticks),
+      tick_marks: {
+        angle: function(e) {
+          rotate_element(document.getElementById('clock-ticks'), params.tick_marks.angle);
+        },
+        hour_ticks: e => shape_ticks('hour-ticks', params.tick_marks.hour_ticks),
+        minute_ticks: e => shape_ticks('minute-ticks', params.tick_marks.minute_ticks),
+      },
       hour_hand:   e => redraw_hand(document.getElementById('hour-hand'), params.hour_hand),
       minute_hand: e => redraw_hand(document.getElementById('minute-hand'), params.minute_hand),
       second_hand: e => redraw_hand(document.getElementById('second-hand'), params.second_hand),
@@ -350,17 +358,24 @@
       }, o);
     }
 
+    function path_to_id(...path) {
+      return path.join('-');
+    }
+
     function add_pad(el) {
       var pad = document.createElement('span');
       el.appendChild(pad);
       pad.setAttribute('class', 'pad');
     }
 
-    function create_control_div(control_type, label, ...path) {
-      var path_str = path.join('-');
+    function create_control_div(container_el, item, ...path) {
+      var param = path[path.length - 1];
+      const control_type = param.replace(/.*_/, '');
 
       var param_div = document.createElement('div');
-      param_div.id = `${path_str}-control`;
+      container_el.appendChild(param_div);
+
+      param_div.id = path_to_id(...path, 'control');  // TODO consider extra -
       param_div.setAttribute('class', 'param-control');
 
       // The label also contains all linked input elements, allowing one to
@@ -379,15 +394,15 @@
       var span = document.createElement('span');
       param_label_span.appendChild(span);
       span.setAttribute('class', 'param-label-text');
-      span.textContent = label;
+      span.textContent = wordify_ident(param);
 
       // Add an input of the given type to the param control's label
       function add_input_el(type, updater) {
         var el = document.createElement('input');
 
         el.type = type;
-        el.id = `${path_str}-${type}`;
-        el.value = getPropByPath(params, path);
+        el.id = path_to_id(...path, type);
+        el.value = item;
         el.addEventListener("input", updater);
 
         for (const attr in config[control_type]) {
@@ -400,7 +415,7 @@
       function add_slider_limit(attr) {
         var el = document.createElement('span');
 
-        el.id = `${path_str}-${attr}`;
+        el.id = path_to_id(...path, attr);
         el.setAttribute('class', `slider-${attr}`);
         el.textContent = config[control_type][attr];
         return el;
@@ -418,7 +433,11 @@
           if (!(pathbit in curprop)) {
             pathbit = "_else";
           }
+
           let nextprop = curprop[pathbit];
+          console.assert(nextprop !== undefined && nextprop !== null,
+            {msg: "Missing entry in redraw!", pathidx: pathidx, pathbit: pathbit},
+            path, curprop);
           if (typeof nextprop === "function") {
             // We found a redraw function - call it and stop the search
             nextprop(e);
@@ -462,18 +481,19 @@
 
       param_label.setAttribute('for', main_input.id);
       main_input.dispatchEvent(new Event("input"));
-
-      return param_div;
     }
 
-    function create_gradstops(...path) {
+    // item is the list of stops - stoplist
+    function create_gradstops(container_el, stoplist, ...path) {
       var stops_div = document.createElement('div');
-      stops_div.id = path.join('-');
+      container_el.appendChild(stops_div);
+
+      stops_div.id = path_to_id(...path, 'div');
       stops_div.setAttribute('class', 'gradstops');
 
       var span = document.createElement('span');
       stops_div.appendChild(span);
-      span.id = path.join('-');
+      span.id = path_to_id(...path, 'span');
       span.setAttribute('class', 'gradstops-header');
 
       var label_text = document.createElement('span');
@@ -481,7 +501,6 @@
       label_text.setAttribute('class', 'gradstops-label-text');
       label_text.textContent = `Gradient Stops`;
 
-      var stoplist = getPropByPath(params, path);
       for (const stopidx in stoplist) {
         add_gradstop_controls(stopidx);
       }
@@ -489,14 +508,14 @@
       function add_gradstop_controls(stopidx) {
         var stop_controls_div = document.createElement('div');
         stops_div.appendChild(stop_controls_div);
-        stop_controls_div.id = [...path, stopidx].join('-');
+        stop_controls_div.id = path_to_id(...path, stopidx, 'subgroup');
         stop_controls_div.setAttribute('class', 'gradstop-controls');
 
         let gradstop = stoplist[stopidx];
         for (const control in gradstop) {
-          let el = create_control_div(control, `stop${stopidx} ${wordify_ident(control)}`,
+          // TODO make a label for the gradstop identifying the stop number
+          create_control_div(stop_controls_div, gradstop[control],
             ...path, stopidx, control);
-          stop_controls_div.appendChild(el);
         }
       }
 
@@ -510,7 +529,7 @@
         if (stoplist.length > 2) {
           // Duplicate the last stop into the new one.
           // TODO - Recover stashed elements
-          stoplist.pop(stoplist);
+          stoplist.pop();
           stops_div.removeChild(stops_div.lastChild);
           showParamsJson();
         }
@@ -528,40 +547,46 @@
         stoplist.push({...stoplist[new_stopidx - 1]});
         add_gradstop_controls(new_stopidx);
       });
-
-      return stops_div;
     }
 
-    function add_controls_to_param_group(group, group_div) {
-      for (const param in params[group]) {
-        const control_type = param.replace(/.*_/, '');
+    // Handle a control group entry
+    function create_control_group(container_el, item, ...path) {
+      var group_div = document.createElement('div');
+      container_el.appendChild(group_div);
+
+      group_div.id = path_to_id(...path, '-control_group');
+      group_div.setAttribute('class', 'param-group-control');
+
+      var group_label = document.createElement('label');
+      group_div.appendChild(group_label);
+      group_label.textContent = wordify_ident(path[path.length - 1]);
+      group_label.setAttribute('class', 'param-group-header');
+
+      // recurse
+      create_param_controls(group_div, item, ...path);
+    }
+
+    // Construct all controls based on the current params data object.
+    // Called recursively on nested objects.
+    // * container: HTML element to put the controls in (<div>)
+    // * param_obj: object whose keys to iterate over
+    // * ...path: strings describing path into the global params data opbject
+    // Outermost call should call this with an empty path.
+    function create_param_controls(container_el, param_obj, ...path) {
+      for (const key in param_obj) {
+        const item = param_obj[key];
+        const control_type = key.replace(/.*_/, '');
+        let f;
 
         if (control_type == "gradstops") {
-          let el = create_gradstops(group, param);
-          group_div.appendChild(el);
+          f = create_gradstops;
+        } else if (typeof item === 'object') {
+          f = create_control_group;
         } else {
-          let el = create_control_div(control_type, wordify_ident(param), group, param);
-          group_div.appendChild(el);
+          f = create_control_div;
         }
 
-      }
-    }
-
-    function construct_param_controls() {
-      var config_div = document.getElementById('config-control');
-
-      for (const group in params) {
-        var group_div = document.createElement('div');
-        config_div.appendChild(group_div);
-        group_div.id = group + '-control';
-        group_div.setAttribute('class', 'param-group-control');
-
-        var group_label = document.createElement('label');
-        group_div.appendChild(group_label);
-        group_label.textContent = wordify_ident(group);
-        group_label.setAttribute('class', 'param-group-header');
-
-        add_controls_to_param_group(group, group_div);
+        f(container_el, item, ...path, key);
       }
     }
 
@@ -760,7 +785,7 @@
     document.addEventListener("DOMContentLoaded", function() {
       construct_ticks();
       construct_piano();
-      construct_param_controls();
+      create_param_controls(document.getElementById('config-control'), params);
 
       // hook up button actions
       function set_click_handler(id, fn) {
@@ -866,7 +891,7 @@
       for (const line in old_lines) {
         lines.push(`    ${old_lines[line]}\n`);
       }
-      window.prompt("Copy to clipboard: Ctrl+C, Enter", lines.join(""));
+      window.prompt("To Copy: Ctrl+C, Enter", lines.join(""));
     }
   </script>
 </head>
