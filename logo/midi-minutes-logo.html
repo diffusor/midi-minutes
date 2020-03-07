@@ -736,17 +736,17 @@
       var offsetX;
       var offsetY;
 
-      el.addEventListener('mousedown', e => {
+      el.addEventListener('pointerdown', e => {
         // snap offsetX and offsetY - we want to keep the resize tab at this position
         // subtract from el.clientWidth and el.clientHeight to get offset into SVG
         offsetX = el.clientWidth - e.offsetX;
         offsetY = el.clientHeight - e.offsetY;
-        //console.log("mousedown", e);
+        //console.log("pointerdown", e);
         exited_flat_logo_condition = false; // hack for resizing when tiny
 
         e.preventDefault();
-        window.addEventListener('mousemove', drag_resize);
-        window.addEventListener('mouseup', stop_resize);
+        window.addEventListener('pointermove', drag_resize);
+        window.addEventListener('pointerup', stop_resize);
       });
 
       function drag_resize(e) {
@@ -754,8 +754,8 @@
       }
 
       function stop_resize(e) {
-        window.removeEventListener('mousemove', drag_resize);
-        window.removeEventListener('mouseup', stop_resize);
+        window.removeEventListener('pointermove', drag_resize);
+        window.removeEventListener('pointerup', stop_resize);
         resquare_logo();
       }
     }
