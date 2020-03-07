@@ -121,8 +121,10 @@
   </style>
 
   <script type="text/javascript" defer>
+    const ns_xlink = 'http://www.w3.org/1999/xlink';
+
     // Control configuration
-    var config = {
+    const config = {
       size: {step: 1, min: 4, max: 1400},
       radius: {step: 0.1, min: 0, max: 100},
       stroke: {step: 0.1, min: 0, max: 10},
@@ -641,7 +643,7 @@
           let crack = document.createElementNS("http://www.w3.org/2000/svg", 'use');
           white_key_group_el.appendChild(crack);
           crack.id = `white-key-${octave}-${key}`;
-          crack.setAttribute('href', '#white-key-template');
+          crack.setAttributeNS(ns_xlink, 'xlink:href', '#white-key-template');
 
           let angle = octave_angle * octave;
           angle += white_key_angle * key;
@@ -651,7 +653,7 @@
           let cap = document.createElementNS("http://www.w3.org/2000/svg", 'use');
           white_keycap_group_el.appendChild(cap);
           cap.id = `white-keycap-${octave}-${key}`;
-          cap.setAttribute('href', '#white-keycap-template');
+          cap.setAttributeNS(ns_xlink, 'xlink:href', '#white-keycap-template');
           cap.setAttribute('transform', `rotate(${angle + white_key_angle / 2})`);
         }
 
@@ -672,7 +674,7 @@
           var bkey = document.createElementNS("http://www.w3.org/2000/svg", 'use');
           black_key_group_el.appendChild(bkey);
           bkey.id = `black-key-${octave}-${key_id}`;
-          bkey.setAttribute('href', '#black-key-template');
+          bkey.setAttributeNS(ns_xlink, 'xlink:href', '#black-key-template');
 
           let inner_key_angle = groupangle / numkeys;
           let angle = octave_angle * octave;
@@ -875,6 +877,8 @@
   <div class="logo-and-json">
     <div class="logo-wrapper" id="logo-wrapper">
       <svg id="logo"
+          xmlns="http://www.w3.org/2000/svg"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
           width="201" height="201" viewBox="-100 -100 200 200">
         <defs>
           <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
