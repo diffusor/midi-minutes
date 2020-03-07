@@ -270,28 +270,21 @@
 
     function shape_white_keys() {
       const g = params.white_keys;
+      var key = document.getElementById('white-key-template');
+      draw_hand(key, g);
 
-      var white_key_group = document.getElementById('white-key-group');
-      var white_keys = white_key_group.children;
-      for (let i = 0; i < white_keys.length; i++) {
-        key = white_keys[i];
-        draw_hand(key, g);
-      }
+      var cap = document.getElementById('white-keycap-template');
+      cap.setAttribute('transform', `scale(${g.inner_radius})`);
 
-      var white_keycap_group = document.getElementById('white-keycap-group');
-      white_keycap_group.setAttribute('transform', `scale(${g.inner_radius})`);
-      white_keycap_group.setAttribute('stroke-width', g.stroke / 100);
-      white_keycap_group.setAttribute('stroke', g.color);
+      var cap_group = document.getElementById('white-keycap-group');
+      cap_group.setAttribute('stroke-width', g.stroke / 100);
+      cap_group.setAttribute('stroke', g.color);
     }
 
     function shape_black_keys() {
-      var black_key_group = document.getElementById('black-key-group');
-      var black_keys = black_key_group.children;
       const g = params.black_keys;
-      for (let i = 0; i < black_keys.length; i++) {
-        key = black_keys[i];
-        draw_hand(key, g);
-      }
+      var el = document.getElementById('black-key-template');
+      draw_hand(el, g);
     }
 
     function shape_ticks(ticks_id, g) {
@@ -603,7 +596,6 @@
       const octaves = params.clock_face.octaves;
       const octave_angle = (360.0 / octaves);
       const keys_per_octave = 12;
-      const inner_key_angle = octave_angle / keys_per_octave;
       const white_keys_per_octave = 7;
       const white_key_angle = octave_angle / white_keys_per_octave;
       const black_keys_per_octave = 5;
@@ -627,6 +619,12 @@
       let a = (white_key_angle * Math.PI / 180) / 2; // alpha
       let h = Math.sin(a);
       let d = Math.cos(a);
+      var white_keycap_template_el = document.getElementById('white-keycap-template');
+      white_keycap_template_el.setAttribute('x1', d);
+      white_keycap_template_el.setAttribute('y1', -h);
+      white_keycap_template_el.setAttribute('x2', d);
+      white_keycap_template_el.setAttribute('y2', h);
+  
 
       // White Keys
       // These are implied by the cracks between the keys
@@ -640,24 +638,21 @@
         // white keys
         for (const key in white_key_ids) {
           // Construct the spaces between the keys
-          let crack = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+          let crack = document.createElementNS("http://www.w3.org/2000/svg", 'use');
           white_key_group_el.appendChild(crack);
           crack.id = `white-key-${octave}-${key}`;
+          crack.setAttribute('href', '#white-key-template');
+
           let angle = octave_angle * octave;
           angle += white_key_angle * key;
           crack.setAttribute("transform", `rotate(${angle})`);
 
-          // Construct the key ends
-          let end = document.createElementNS("http://www.w3.org/2000/svg", 'line');
-          white_keycap_group_el.appendChild(end);
-          end.id = `white-key-end-${octave}-${key}`;
-          // This causes the stroke size to not even scale when scaling the whole svg!
-          //end.setAttribute('vector-effect', 'non-scaling-stroke');
-          end.setAttribute('transform', `rotate(${angle + white_key_angle / 2})`);
-          end.setAttribute('x1', d);
-          end.setAttribute('y1', -h);
-          end.setAttribute('x2', d);
-          end.setAttribute('y2', h);
+          // Construct the keycaps
+          let cap = document.createElementNS("http://www.w3.org/2000/svg", 'use');
+          white_keycap_group_el.appendChild(cap);
+          cap.id = `white-keycap-${octave}-${key}`;
+          cap.setAttribute('href', '#white-keycap-template');
+          cap.setAttribute('transform', `rotate(${angle + white_key_angle / 2})`);
         }
 
         // black keys
@@ -674,12 +669,12 @@
             key_id_offset = 2;
           }
 
-          var bkey = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+          var bkey = document.createElementNS("http://www.w3.org/2000/svg", 'use');
           black_key_group_el.appendChild(bkey);
-          bkey.id = `black-key-${key_id}`;
+          bkey.id = `black-key-${octave}-${key_id}`;
+          bkey.setAttribute('href', '#black-key-template');
 
           let inner_key_angle = groupangle / numkeys;
-
           let angle = octave_angle * octave;
           angle += baseangle;
           angle += inner_key_angle * (((key_id - key_id_offset) * 2) + 1.5);
@@ -886,6 +881,9 @@
             <stop offset="0%" stop-color="red" stop-opacity="1" />
             <stop offset="100%" stop-color="green" stop-opacity="1" />
           </linearGradient>
+          <polygon id="white-key-template" />
+          <line id="white-keycap-template" />
+          <polygon id="black-key-template" />
         </defs>
 
         <!-- The whole Piano Clock is drawn in reference to 0 degrees being
