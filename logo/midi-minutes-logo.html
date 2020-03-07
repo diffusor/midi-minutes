@@ -140,7 +140,7 @@
     // object to determine additional properties for the input controls.
     var params = {
       clock_face: {
-        size: 200,
+        size: 400,
         fill_color: "#FFFFFF",
         inner_radius: 8,
         outer_radius: 98,
@@ -325,7 +325,7 @@
     // to the right.
     // The rotation is taken from the angle parameter.
     function rotate_element(el, angle) {
-      el.setAttribute("transform", `rotate(${angle - 90})`);
+      el.setAttribute("transform", `rotate(${angle})`);
     }
 
     function update_sibling(e) {
@@ -643,8 +643,7 @@
           let crack = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
           white_key_group_el.appendChild(crack);
           crack.id = `white-key-${octave}-${key}`;
-          let angle = -90.0;
-          angle += octave_angle * octave;
+          let angle = octave_angle * octave;
           angle += white_key_angle * key;
           crack.setAttribute("transform", `rotate(${angle})`);
 
@@ -681,8 +680,7 @@
 
           let inner_key_angle = groupangle / numkeys;
 
-          let angle = -90.0;
-          angle += octave_angle * octave;
+          let angle = octave_angle * octave;
           angle += baseangle;
           angle += inner_key_angle * (((key_id - key_id_offset) * 2) + 1.5);
           bkey.setAttribute("transform", `rotate(${angle})`);
@@ -890,36 +888,40 @@
           </linearGradient>
         </defs>
 
-        <circle id="clock-face" cx="0" cy="0" r="40" stroke-width="0" />
+        <!-- The whole Piano Clock is drawn in reference to 0 degrees being
+          - midnight, with degrees increasing clockwise. -->
+        <g id="piano-clock" transform="rotate(-90)">
+          <circle id="clock-face" cx="0" cy="0" r="40" stroke-width="0" />
 
-        <g id="piano-keys">
-          <g id="white-key-group"
-             fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
+          <g id="piano-keys">
+            <g id="white-key-group"
+               fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
+            </g>
+
+            <g id="white-keycap-group"
+               fill="url(#grad1)" stroke-opacity="1" stroke-width="3" stroke="blue" >
+            </g>
+
+            <g id="black-key-group"
+               fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
+            </g>
           </g>
 
-          <g id="white-keycap-group"
-             fill="url(#grad1)" stroke-opacity="1" stroke-width="3" stroke="blue" >
+          <g id="clock-ticks">
+            <g id="hour-ticks" stroke-width="0"> </g>
+            <g id="minute-ticks" stroke-width="0"> </g>
           </g>
 
-          <g id="black-key-group"
-             fill="url(#grad1)" stroke-opacity="1" stroke-width="0" stroke="blue" >
+          <circle id="outer-circle" cx="0" cy="0" r="40" fill="none" stroke="black" stroke-width="4" />
+
+          <g id="hands" stroke-width="0">
+            <polygon id="hour-hand" />
+            <polygon id="minute-hand" />
+            <polygon id="second-hand" />
           </g>
+
+          <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
         </g>
-
-        <g id="clock-ticks">
-          <g id="hour-ticks" stroke-width="0"> </g>
-          <g id="minute-ticks" stroke-width="0"> </g>
-        </g>
-
-        <circle id="outer-circle" cx="0" cy="0" r="40" fill="none" stroke="black" stroke-width="4" />
-
-        <g id="hands" stroke-width="0">
-          <polygon id="hour-hand" />
-          <polygon id="minute-hand" />
-          <polygon id="second-hand" />
-        </g>
-
-        <circle id="inner-circle" cx="0" cy="0" r="4" stroke-width="0" />
       </svg>
 
       <svg id="logo-resizer" class="resize-tab" viewBox="0 0 100 100">
