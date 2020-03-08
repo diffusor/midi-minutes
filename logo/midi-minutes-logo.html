@@ -70,13 +70,14 @@
     }
     .wrapper {
       display: flex;
-      height: calc(100vh - 10px);
+      height: calc(100vh - 7px - 2rem);
     }
     .wrapper .config {
       flex: 1;
       overflow: auto;
       min-width: 25rem;
     }
+    #size-control,
     .gradstops,
     .gradstop-controls,
     .param-group-control {
@@ -96,8 +97,8 @@
       padding: 2px;
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 10px);
-      max-height: calc(100vh - 10px);
+      height: calc(100vh - 7px - 2rem);
+      /*max-height: calc(100vh - 10px);*/
     }
     #logo {
       padding: 2px;
@@ -376,9 +377,16 @@
       const control_type = param.replace(/.*_/, '');
 
       var param_div = document.createElement('div');
-      container_el.appendChild(param_div);
-
       param_div.id = path_to_id(...path, 'control');  // TODO consider extra -
+      if (param_div.id === 'size-control') {
+        // Don't ever stick the main SVG size control next to the clock,
+        // it makes resizing using the slider impossible.
+        let body = document.getElementById('body');
+        body.insertBefore(param_div, body.firstChild);
+        // wrapper.appendChild(param_div);
+      } else {
+        container_el.appendChild(param_div);
+      }
       param_div.setAttribute('class', 'param-control');
 
       // The label also contains all linked input elements, allowing one to
@@ -911,9 +919,9 @@
   </script>
 </head>
 
-<body>
+<body id="body">
 
-<div class="wrapper">
+<div class="wrapper" id="wrapper">
   <div class="logo-and-json">
     <div class="logo-wrapper" id="logo-wrapper">
       <svg id="logo"
