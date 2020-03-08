@@ -416,8 +416,10 @@
         el.value = item;
         el.addEventListener("input", updater);
 
-        for (const attr in config[control_type]) {
-          el.setAttribute(attr, config[control_type][attr]);
+        if (typeof config[control_type] === 'object') {
+          for (const [attr, value] of Object.entries(config[control_type])) {
+            el.setAttribute(attr, value);
+          }
         }
         return el;
       }
