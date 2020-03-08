@@ -205,28 +205,30 @@
           angle: 200,
         },
       },
-      black_keys: {
-        color: "black",
-        inner_width: 6.8,
-        inner_radius: 60,
-        outer_width: 9.9,
-        outer_radius: 85,
-        gradstops: [
-          {offset: 0, opacity: 100, color: "#000000"},
-          {offset: 100, opacity: 0, color: "#000000"},
-        ],
-      },
-      white_keys: {
-        color: "black",
-        inner_width: 2,
-        inner_radius: 40,
-        outer_width: 2,
-        outer_radius: 85,
-        stroke: 2,
-        gradstops: [
-          {offset: 0, opacity: 100, color: "#000000"},
-          {offset: 100, opacity: 0, color: "#000000"},
-        ],
+      piano: {
+        black_keys: {
+          color: "black",
+          inner_width: 6.8,
+          inner_radius: 60,
+          outer_width: 9.9,
+          outer_radius: 85,
+          gradstops: [
+            {offset: 0, opacity: 100, color: "#000000"},
+            {offset: 100, opacity: 0, color: "#000000"},
+          ],
+        },
+        white_keys: {
+          color: "black",
+          inner_width: 2,
+          inner_radius: 40,
+          outer_width: 2,
+          outer_radius: 85,
+          stroke: 2,
+          gradstops: [
+            {offset: 0, opacity: 100, color: "#000000"},
+            {offset: 100, opacity: 0, color: "#000000"},
+          ],
+        },
       },
     };
 
@@ -279,8 +281,10 @@
           _else: e => draw_hand(document.getElementById('second-hand'), params.clock_hands.second_hand),
         },
       },
-      white_keys: e => shape_white_keys(),
-      black_keys: e => shape_black_keys(),
+      piano: {
+        white_keys: e => shape_white_keys(),
+        black_keys: e => shape_black_keys(),
+      },
     };
 
     function redraw_piano() {
@@ -292,7 +296,7 @@
     }
 
     function shape_white_keys() {
-      const g = params.white_keys;
+      const g = params.piano.white_keys;
       var key = document.getElementById('white-key-template');
       draw_hand(key, g);
 
@@ -305,7 +309,7 @@
     }
 
     function shape_black_keys() {
-      const g = params.black_keys;
+      const g = params.piano.black_keys;
       var el = document.getElementById('black-key-template');
       draw_hand(el, g);
     }
