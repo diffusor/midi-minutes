@@ -175,33 +175,35 @@
           outer_radius: 98,
         },
       },
-      hour_hand: {
-        color: "black",
-        inner_width: 0,
-        inner_radius: 5,
-        middle_width: 9,
-        middle_radius: 20,
-        outer_width: 0,
-        outer_radius: 65,
-        angle: 0,
-      },
-      minute_hand: {
-        color: "black",
-        inner_width: 0,
-        inner_radius: 5,
-        middle_width: 4,
-        middle_radius: 20,
-        outer_width: 0,
-        outer_radius: 93,
-        angle: 150,
-      },
-      second_hand: {
-        color: "#FF0000",
-        inner_width: 1.5,
-        inner_radius: 5,
-        outer_width: 1.5,
-        outer_radius: 94,
-        angle: 200,
+      clock_hands: {
+        hour_hand: {
+          color: "black",
+          inner_width: 0,
+          inner_radius: 5,
+          middle_width: 9,
+          middle_radius: 20,
+          outer_width: 0,
+          outer_radius: 65,
+          angle: 0,
+        },
+        minute_hand: {
+          color: "black",
+          inner_width: 0,
+          inner_radius: 5,
+          middle_width: 4,
+          middle_radius: 20,
+          outer_width: 0,
+          outer_radius: 93,
+          angle: 150,
+        },
+        second_hand: {
+          color: "#FF0000",
+          inner_width: 1.5,
+          inner_radius: 5,
+          outer_width: 1.5,
+          outer_radius: 94,
+          angle: 200,
+        },
       },
       black_keys: {
         color: "black",
@@ -263,17 +265,19 @@
         hour_ticks: e => shape_ticks('hour-ticks', params.tick_marks.hour_ticks),
         minute_ticks: e => shape_ticks('minute-ticks', params.tick_marks.minute_ticks),
       },
-      hour_hand: {
-        angle: e => rotate_element(document.getElementById('hour-hand'), params.hour_hand.angle),
-        _else: e => redraw_hand(document.getElementById('hour-hand'), params.hour_hand),
-      },
-      minute_hand: {
-        angle: e => rotate_element(document.getElementById('minute-hand'), params.minute_hand.angle),
-        _else: e => redraw_hand(document.getElementById('minute-hand'), params.minute_hand),
-      },
-      second_hand: {
-        angle: e => rotate_element(document.getElementById('second-hand'), params.second_hand.angle),
-        _else: e => redraw_hand(document.getElementById('second-hand'), params.second_hand),
+      clock_hands: {
+        hour_hand: {
+          angle: e => rotate_element(document.getElementById('hour-hand'), params.clock_hands.hour_hand.angle),
+          _else: e => draw_hand(document.getElementById('hour-hand'), params.clock_hands.hour_hand),
+        },
+        minute_hand: {
+          angle: e => rotate_element(document.getElementById('minute-hand'), params.clock_hands.minute_hand.angle),
+          _else: e => draw_hand(document.getElementById('minute-hand'), params.clock_hands.minute_hand),
+        },
+        second_hand: {
+          angle: e => rotate_element(document.getElementById('second-hand'), params.clock_hands.second_hand.angle),
+          _else: e => draw_hand(document.getElementById('second-hand'), params.clock_hands.second_hand),
+        },
       },
       white_keys: e => shape_white_keys(),
       black_keys: e => shape_black_keys(),
@@ -312,10 +316,6 @@
       for (let i = 0; i < ticks.length; i++) {
         draw_hand(ticks[i], g);
       }
-    }
-
-    function redraw_hand(hand, g) {
-      draw_hand(hand, g);
     }
 
     function draw_hand(hand, g) {
@@ -822,9 +822,9 @@
         window.clearInterval(interval_id);
         interval_id = null;
         button.value = "Go!";
-        redraw.hour_hand.angle(e);
-        redraw.minute_hand.angle(e);
-        redraw.second_hand.angle(e);
+        for (const hand_id in redraw.clock_hands) {
+          redraw.clock_hands[hand_id].angle(e);  // re-sync hands to parameters
+        }
       }
     }
 
