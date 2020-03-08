@@ -143,8 +143,8 @@
     // Names are split with _ and the final element is looked up in the config
     // object to determine additional properties for the input controls.
     var params = {
+      size: 400,
       clock_face: {
-        size: 400,
         fill_color: "#FFFFFF",
         inner_radius: 8,
         outer_radius: 98,
@@ -232,14 +232,14 @@
     };
 
     var redraw = {
-      clock_face: {
-        size: function(e) {
-          const s = params.clock_face.size;
-          var el = document.getElementById('logo');
-          el.setAttribute('width', s);
-          el.setAttribute('height', s);
-        },
+      size: function(e) {
+        const s = params.size;
+        var el = document.getElementById('logo');
+        el.setAttribute('width', s);
+        el.setAttribute('height', s);
+      },
 
+      clock_face: {
         _else: function(e) {
           var outer_circle = document.getElementById('outer-circle');
           outer_circle.setAttribute("r", params.clock_face.outer_radius);
@@ -735,7 +735,7 @@
       //console.log(`mouse: ${e.clientX},${e.clientY}; topleft: ${el.clientLeft},${el.clientTop}; offset: ${offsetX},${offsetY}, sizeXY: ${sizeX},${sizeY}, new_size: ${new_size}`);
 
       // trigger the redraw
-      let main_input = document.getElementById("clock_face-size-number");
+      let main_input = document.getElementById("size-number");
       main_input.value = new_size;
       main_input.dispatchEvent(new Event("input"));
     }
@@ -745,8 +745,8 @@
     function resquare_logo() {
       var el = document.getElementById('logo');
       let actual_size = Math.min(el.scrollWidth, el.scrollHeight);
-      if (actual_size < params.clock_face.size) {
-        let main_input = document.getElementById("clock_face-size-number");
+      if (actual_size < params.size) {
+        let main_input = document.getElementById("size-number");
         main_input.value = actual_size;
         main_input.dispatchEvent(new Event("input"));
       }
