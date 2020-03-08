@@ -148,10 +148,7 @@
         fill_color: "#FFFFFF",
         inner_radius: 8,
         outer_radius: 98,
-        octaves: 5,
         stroke: 2,
-        ticks_angle: 0,
-        piano_angle: 0,
         ms_interval: 1000,
       },
       tick_marks: {
@@ -206,6 +203,8 @@
         },
       },
       piano: {
+        octaves: 5,
+        angle: 0,
         black_keys: {
           color: "black",
           inner_width: 6.8,
@@ -241,14 +240,6 @@
           el.setAttribute('height', s);
         },
 
-        octaves: redraw_piano,
-        piano_angle: function(e) {
-          rotate_element(document.getElementById('piano-keys'), params.clock_face.piano_angle);
-        },
-        ticks_angle: function(e) {
-          rotate_element(document.getElementById('clock-ticks'), params.clock_face.ticks_angle);
-        },
-
         _else: function(e) {
           var outer_circle = document.getElementById('outer-circle');
           outer_circle.setAttribute("r", params.clock_face.outer_radius);
@@ -282,6 +273,10 @@
         },
       },
       piano: {
+        octaves: redraw_piano,
+        angle: function(e) {
+          rotate_element(document.getElementById('piano-keys'), params.piano.angle);
+        },
         white_keys: e => shape_white_keys(),
         black_keys: e => shape_black_keys(),
       },
@@ -632,7 +627,7 @@
     }
 
     function construct_piano() {
-      const octaves = params.clock_face.octaves;
+      const octaves = params.piano.octaves;
       const octave_angle = (360.0 / octaves);
       const keys_per_octave = 12;
       const white_keys_per_octave = 7;
