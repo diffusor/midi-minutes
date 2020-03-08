@@ -255,21 +255,21 @@
       },
       tick_marks: {
         angle: e => rotate('clock-ticks', params.tick_marks.angle),
-        hour_ticks: e => shape_ticks('hour-ticks', params.tick_marks.hour_ticks),
-        minute_ticks: e => shape_ticks('minute-ticks', params.tick_marks.minute_ticks),
+        hour_ticks: e => form_sympoly('hour-tick-template', params.tick_marks.hour_ticks),
+        minute_ticks: e => form_sympoly('minute-tick-template', params.tick_marks.minute_ticks),
       },
       clock_hands: {
         hour_hand: {
           angle: e => rotate('hour-hand', params.clock_hands.hour_hand.angle),
-          _else: e => draw_hand(document.getElementById('hour-hand'), params.clock_hands.hour_hand),
+          _else: e => form_sympoly(document.getElementById('hour-hand'), params.clock_hands.hour_hand),
         },
         minute_hand: {
           angle: e => rotate('minute-hand', params.clock_hands.minute_hand.angle),
-          _else: e => draw_hand(document.getElementById('minute-hand'), params.clock_hands.minute_hand),
+          _else: e => form_sympoly(document.getElementById('minute-hand'), params.clock_hands.minute_hand),
         },
         second_hand: {
           angle: e => rotate('second-hand', params.clock_hands.second_hand.angle),
-          _else: e => draw_hand(document.getElementById('second-hand'), params.clock_hands.second_hand),
+          _else: e => form_sympoly('second-hand', params.clock_hands.second_hand),
         },
       },
       piano: {
@@ -278,7 +278,7 @@
           rotate('piano-keys', params.piano.angle);
         },
         white_keys: e => shape_white_keys(),
-        black_keys: e => shape_black_keys(),
+        black_keys: e => form_sympoly('black-key-template', params.piano.black_keys),
       },
     };
 
@@ -287,13 +287,12 @@
       remove_piano();
       construct_piano();
       shape_white_keys();
-      shape_black_keys();
+      redraw.piano.black_keys();
     }
 
     function shape_white_keys() {
       const g = params.piano.white_keys;
-      var key = document.getElementById('white-key-template');
-      draw_hand(key, g);
+      form_sympoly('white-key-template', g);
 
       var cap = document.getElementById('white-keycap-template');
       cap.setAttribute('transform', `scale(${g.inner_radius})`);
@@ -303,21 +302,13 @@
       cap_group.setAttribute('stroke', g.color);
     }
 
-    function shape_black_keys() {
-      const g = params.piano.black_keys;
-      var el = document.getElementById('black-key-template');
-      draw_hand(el, g);
-    }
-
-    function shape_ticks(ticks_id, g) {
-      var ticks_group = document.getElementById(ticks_id);
-      var ticks = ticks_group.children;
-      for (let i = 0; i < ticks.length; i++) {
-        draw_hand(ticks[i], g);
+    // Draws a "symmetric polygon" - sympoly
+    // Fill in the points attribute of the given SVG element id according to
+    // the specifications in given parameter group object.
+    function form_sympoly(hand, g) {
+      if (typeof hand === 'string') {
+        hand = document.getElementById(hand);
       }
-    }
-
-    function draw_hand(hand, g) {
       hand.setAttribute('fill', g.color);
       hand.setAttribute('points',
         `${g.inner_radius},${g.inner_width / 2}
@@ -604,19 +595,21 @@
       // Hour ticks
       var hour_ticks_el = document.getElementById('hour-ticks');
       for (let i = 0; i < 12; i++) {
-        let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+        let tick = document.createElementNS("http://www.w3.org/2000/svg", 'use');
         hour_ticks_el.appendChild(tick);
         tick.id = `hour-tick-${i}`;
+        tick.setAttributeNS(ns_xlink, 'xlink:href', '#hour-tick-template');
         rotate(tick, i * 360 / 12);
       }
 
       // Minute ticks
       var minute_ticks_el = document.getElementById('minute-ticks');
       for (let i = 0; i < 60; i++) {
-        if (i % 5) {
-          let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+        if (i % 5) { // skip the hour tick marks
+          let tick = document.createElementNS("http://www.w3.org/2000/svg", 'use');
           minute_ticks_el.appendChild(tick);
           tick.id = `minute-tick-${i}`;
+          tick.setAttributeNS(ns_xlink, 'xlink:href', '#minute-tick-template');
           rotate(tick, i * 360 / 60);
         }
       }
@@ -923,6 +916,8 @@
             <stop offset="0%" stop-color="red" stop-opacity="1" />
             <stop offset="100%" stop-color="green" stop-opacity="1" />
           </linearGradient>
+          <polygon id="hour-tick-template" />
+          <polygon id="minute-tick-template" />
           <polygon id="white-key-template" />
           <line id="white-keycap-template" />
           <polygon id="black-key-template" />
