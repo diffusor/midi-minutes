@@ -144,12 +144,12 @@
     // object to determine additional properties for the input controls.
     var params = {
       size: 400,
+      ms_interval: 1000,
       clock_face: {
         fill_color: "#FFFFFF",
         inner_radius: 8,
         outer_radius: 98,
         stroke: 2,
-        ms_interval: 1000,
       },
       tick_marks: {
         angle: 0,
@@ -238,6 +238,8 @@
         el.setAttribute('width', s);
         el.setAttribute('height', s);
       },
+
+      ms_interval: e => restart_clock(),
 
       clock_face: {
         _else: function(e) {
@@ -803,13 +805,20 @@
       window.addEventListener("resize", resquare_logo);
     });
 
-    var interval_id = null;
+    let interval_id = null;
+    function restart_clock() {
+      if (interval_id !== null) {
+        toggleClockRun();
+        toggleClockRun();
+      }
+    }
+
     function toggleClockRun(e) {
       var button = document.getElementById('run-clock-button');
       if (interval_id === null) {
         // Start the clock running
         set_time();
-        interval_id = window.setInterval(set_time, params.clock_face.ms_interval /*ms*/);
+        interval_id = window.setInterval(set_time, params.ms_interval /*ms*/);
         button.value = "Stop!";
       } else {
         // Stop the clock and reset the hands
@@ -830,7 +839,7 @@
       const then = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0);
 
       let s = (now.getTime() - then.getTime()) / 1000; // seconds since midnight
-      if (params.clock_face.ms_interval == 1000) {
+      if (params.ms_interval == 1000) {
         s = Math.floor(s);
       }
       //console.log(s);
