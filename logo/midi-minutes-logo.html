@@ -254,28 +254,28 @@
         },
       },
       tick_marks: {
-        angle: e => rotate_element(document.getElementById('clock-ticks'), params.tick_marks.angle),
+        angle: e => rotate('clock-ticks', params.tick_marks.angle),
         hour_ticks: e => shape_ticks('hour-ticks', params.tick_marks.hour_ticks),
         minute_ticks: e => shape_ticks('minute-ticks', params.tick_marks.minute_ticks),
       },
       clock_hands: {
         hour_hand: {
-          angle: e => rotate_element(document.getElementById('hour-hand'), params.clock_hands.hour_hand.angle),
+          angle: e => rotate('hour-hand', params.clock_hands.hour_hand.angle),
           _else: e => draw_hand(document.getElementById('hour-hand'), params.clock_hands.hour_hand),
         },
         minute_hand: {
-          angle: e => rotate_element(document.getElementById('minute-hand'), params.clock_hands.minute_hand.angle),
+          angle: e => rotate('minute-hand', params.clock_hands.minute_hand.angle),
           _else: e => draw_hand(document.getElementById('minute-hand'), params.clock_hands.minute_hand),
         },
         second_hand: {
-          angle: e => rotate_element(document.getElementById('second-hand'), params.clock_hands.second_hand.angle),
+          angle: e => rotate('second-hand', params.clock_hands.second_hand.angle),
           _else: e => draw_hand(document.getElementById('second-hand'), params.clock_hands.second_hand),
         },
       },
       piano: {
         octaves: redraw_piano,
         angle: function(e) {
-          rotate_element(document.getElementById('piano-keys'), params.piano.angle);
+          rotate('piano-keys', params.piano.angle);
         },
         white_keys: e => shape_white_keys(),
         black_keys: e => shape_black_keys(),
@@ -330,11 +330,14 @@
     }
 
     // Generate a transform on the given SVG element that will
-    // rotate it to the parameter settings in the given group.
-    // The SVG element is assumed to be drawn along the X axis,
-    // to the right.
-    // The rotation is taken from the angle parameter.
-    function rotate_element(el, angle) {
+    // rotate it to the specified angle.
+    //
+    // * el: element or id of element to add the transform to
+    // * angle: number of degrees to rotate clockwise.
+    function rotate(el, angle) {
+      if (typeof el === 'string') {
+        el = document.getElementById(el);
+      }
       el.setAttribute("transform", `rotate(${angle})`);
     }
 
@@ -604,7 +607,7 @@
         let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
         hour_ticks_el.appendChild(tick);
         tick.id = `hour-tick-${i}`;
-        rotate_element(tick, i * 360 / 12);
+        rotate(tick, i * 360 / 12);
       }
 
       // Minute ticks
@@ -614,7 +617,7 @@
           let tick = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
           minute_ticks_el.appendChild(tick);
           tick.id = `minute-tick-${i}`;
-          rotate_element(tick, i * 360 / 60);
+          rotate(tick, i * 360 / 60);
         }
       }
     }
@@ -843,7 +846,7 @@
       set_hand("second-hand", s * 360 / 60);
 
       function set_hand(id, angle) {
-        rotate_element(document.getElementById(id), angle);
+        rotate(id, angle);
       }
     }
 
