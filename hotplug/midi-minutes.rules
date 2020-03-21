@@ -1,0 +1,19 @@
+# Midi Minutes udev rules
+# https://github.com/diffusor/midi-minutes
+#
+# Put this file in /etc/udev/rules.d/
+#
+# This file launches a systemd template service named according to the device
+# name and product name of the attached device.
+#
+# System template service: midi-minutes@$device.$product.service
+#
+# The product name is escaped such that systemd can launch the service
+# correctly.  The service definition unpacks the name.
+#
+# Detection is based on the "add" event of the ALSA seq-midi-M-N device
+# generated when a MIDI controller is plugged in.  The *S matchers (ATTRS,
+# DRIVERS, etc) attempt to find the appropriate parent device with the most
+# relevant product attribute, which is used to fill in the $product portion of
+# the systemd service name.
+DRIVER=="snd_seq_midi", ACTION=="add", ATTRS{product}=="*" DRIVERS!="snd-usb-audio" KERNELS=="[0-9]-*" SUBSYSTEMS=="usb" PROGRAM="/bin/systemd-escape -p --template=midi-minutes@.service '$name.$attr{product}'", TAG+="systemd", ENV{SYSTEMD_WANTS}+="%c"
