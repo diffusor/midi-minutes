@@ -1,5 +1,5 @@
 # Midi Minutes udev rules
-DRIVER=="snd_seq_midi", ACTION=="add", ATTRS{product}=="*" DRIVERS!="snd-usb-audio" KERNELS=="[0-9]-*" SUBSYSTEMS=="usb" PROGRAM="/bin/systemd-escape -p --template=midi-minutes@.service '$name.$attr{product}'", TAG+="systemd", ENV{SYSTEMD_WANTS}+="%c"
+DRIVER=="snd_seq_midi", ACTION=="add", ATTRS{product}=="*" DRIVERS!="snd-usb-audio" KERNELS=="[0-9]-*" SUBSYSTEMS=="usb" PROGRAM="/bin/systemd-escape -p --template=midi-minutes@.service '$name.$attr{product}.$attr{serial}'", TAG+="systemd", ENV{SYSTEMD_WANTS}+="%c"
 
 # Documentation:
 #
