@@ -1,5 +1,7 @@
 # Midi Minutes udev rules
-# https://github.com/diffusor/midi-minutes
+DRIVER=="snd_seq_midi", ACTION=="add", ATTRS{product}=="*" DRIVERS!="snd-usb-audio" KERNELS=="[0-9]-*" SUBSYSTEMS=="usb" PROGRAM="/bin/systemd-escape -p --template=midi-minutes@.service '$name.$attr{product}'", TAG+="systemd", ENV{SYSTEMD_WANTS}+="%c"
+
+# Documentation:
 #
 # Put this file in /etc/udev/rules.d/
 #
@@ -16,4 +18,22 @@
 # DRIVERS, etc) attempt to find the appropriate parent device with the most
 # relevant product attribute, which is used to fill in the $product portion of
 # the systemd service name.
-DRIVER=="snd_seq_midi", ACTION=="add", ATTRS{product}=="*" DRIVERS!="snd-usb-audio" KERNELS=="[0-9]-*" SUBSYSTEMS=="usb" PROGRAM="/bin/systemd-escape -p --template=midi-minutes@.service '$name.$attr{product}'", TAG+="systemd", ENV{SYSTEMD_WANTS}+="%c"
+#
+# Finding MIDI devices in /sys and /dev:
+# $ find /sys /dev -iname "*mid*" -ls
+#
+# Assuming midi1 is the device corresponding to your MIDI controller:
+#
+# Determine the /sys path corresponding to a device /dev path:
+# $ udevadm info -q path -n /dev/snd/midiC1D0
+#
+# List the device attributes and parent information for devising match lines:
+# $ udevadm info -a -p /sys/bus/snd_seq/devices/seq-midi-1-0
+#
+# Test that the udev rule works:
+# $ udevadm test /sys/bus/snd_seq/devices/seq-midi-1-0
+#
+# Re-process udev triggers without needing to reload the udev systemd service:
+# $ sudo udevadm trigger
+#
+# Source: https://github.com/diffusor/midi-minutes
