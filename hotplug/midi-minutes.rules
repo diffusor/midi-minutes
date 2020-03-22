@@ -1,5 +1,5 @@
 # Midi Minutes udev rules
-DRIVER=="snd_seq_midi", ACTION=="add", ATTRS{product}=="*" DRIVERS!="snd-usb-audio" KERNELS=="[0-9]-*" SUBSYSTEMS=="usb" PROGRAM="/bin/systemd-escape -p --template=midi-minutes@.service '$name.$attr{product}.$attr{serial}'", TAG+="systemd", ENV{SYSTEMD_WANTS}+="%c"
+DRIVER=="snd_seq_midi", ACTION=="add", ATTRS{product}=="*" DRIVERS!="snd-usb-audio" KERNELS=="[0-9]-*" SUBSYSTEMS=="usb" TAG+="systemd", ENV{SYSTEMD_WANTS}+="'midi-minutes@$name.$attr{product}.$attr{serial}.service'"
 
 # Documentation:
 #
@@ -8,7 +8,8 @@ DRIVER=="snd_seq_midi", ACTION=="add", ATTRS{product}=="*" DRIVERS!="snd-usb-aud
 # This file launches a systemd template service named according to the device
 # name and product name of the attached device.
 #
-# System template service: midi-minutes@$device.$product.service
+# System template service: midi-minutes@.service
+# The info expanded version:  midi-minutes@$device.$product.$serial.service
 #
 # The product name is escaped such that systemd can launch the service
 # correctly.  The service definition unpacks the name.
@@ -34,6 +35,9 @@ DRIVER=="snd_seq_midi", ACTION=="add", ATTRS{product}=="*" DRIVERS!="snd-usb-aud
 # $ udevadm test /sys/bus/snd_seq/devices/seq-midi-1-0
 #
 # Re-process udev triggers without needing to reload the udev systemd service:
-# $ sudo udevadm trigger
+# $ sudo udevadm control --reload-rules ; sudo udevadm trigger
+#
+# To reload systemd files as well:
+# $ sudo systemctl daemon-reload
 #
 # Source: https://github.com/diffusor/midi-minutes

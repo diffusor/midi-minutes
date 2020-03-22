@@ -1,0 +1,25 @@
+# Midi Minutes systemd service description file.
+#
+# To install:
+# $ sudo cp -i midi-minutes@.service /etc/systemd/system/
+# $ sudo chmod 644 /etc/systemd/system/midi-minutes@.service
+# $ sudo systemctl daemon-reload
+#
+# TODO
+# To make a service wait until a device is available on system startup, use After=your.device
+# To stop a service on device loss, use BindsTo=your.device
+[Unit]
+#BindTo=%i.device
+#After=%i.device
+#After=multi-user.target sound.target
+Description=Midi Minutes MIDI controller output capture for %i
+Documentation=https://github.com/diffusor/midi-minutes
+
+[Service]
+User=diffusor
+Group=diffusor
+# "simple" means systemd forks the process for us and tracks its PID
+Type=oneshot
+StopWhenUnneeded=yes
+ExecStart=/home/diffusor/src_local/midi-minutes/bin/testmm.sh "%i"
+#TimeoutStartSec=300
