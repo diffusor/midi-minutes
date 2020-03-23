@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+# Requires python3.7 or above
+
 import sys
 import os
 import re
@@ -11,7 +13,6 @@ from time import time
 from typing import Dict, List
 from dataclasses import dataclass, field
 
-
 @dataclass
 class AlsaMidiClient:
     """MIDI Client and list of ports"""
@@ -21,6 +22,27 @@ class AlsaMidiClient:
     card: int = None
     properties: Dict[str, str] = None
     ports: List[str] = field(default_factory=list)
+
+@dataclass
+class MidiDevice:
+    """Information pertaining to MIDI controller devices"""
+    card: int  # sys_number from the 'sound' subsystem parent
+
+    # Properties from the find_parent(subsystem='usb', device_type='usb_device')
+    manufacturer: str = None   # Attrib manufacturer: b'CME'
+    name: str = None           # Attrib product: b'Xkey Air 25 USB'
+    vendor_id: str = None      # Attrib idVendor: b'258f'
+    model_id: str = None       # Attrib idProduct: b'0b03'
+    serial: str = None         # Attrib serial: b'XX'
+
+    alsa_client: AlsaMidiClient = None
+    snd_seq_device: pyudev.Device = None
+
+@dataclass
+class DeviceState:
+    """Global udev and alsa device state"""
+    alsa_cards: Dict[int, AlsaMidiClient] = field(default_factory=dict)  # From the last read
+    udev_cards: Dict[int, MidiDevice] = field(default_factory=dict)
 
 # The P groups should match the keywords of the AlsaMidiClient data elements
 alsa_midi_client_re = re.compile(r"client (?P<client>\d+): '(?P<product>.*)' \[(?P<properties>.*)\]$")
@@ -89,20 +111,23 @@ attrs = ['device_node', 'device_number', 'device_path', 'device_type', 'driver',
 # add/remove pair.
 # Detect action is None as a "device already plugged in" action.
 def handle_udev_event(device):
-    print("{d.action} {d.sys_path}: {drv} - {d.device_type} [{prod}] {d.parent.sys_name}[{d.parent.sys_number}]".format(d=device, drv=device.get('DRIVER'), prod=device.attributes.get('product')))
-    # find_parent(subsystem, device_type=None)
-    # find_parent('sound') -> this one has sys_name == 'cardN', sys_number == N
-    for d in itertools.chain([device], device.ancestors):
-        print("\n*",d.sys_path)
-        print("  tags:", ", ".join(d.tags))
-        for attr in attrs:
-            print("  attr {}: {}".format(attr, getattr(d, attr)))
-        for k, v in d.items():
-            print("  item {}: {}".format(k, v))
-        for k in d.attributes.available_attributes:
-            print("  Attrib {}: {}".format(k, d.attributes.get(k)))
+    if device.action is None or device.action in "bind unbind".split():
+        print("\n".join(str(c) for c in get_alsa_midi_clients()), "\n")
 
-# TODO FIXME - how to map from system device path to the underlying ALSA port?
+        print("{d.action} {d.sys_path}: {drv} - {d.device_type} [{prod}] {d.parent.sys_name}[{d.parent.sys_number}]".format(d=device, drv=device.get('DRIVER'), prod=device.attributes.get('product')))
+        # find_parent(subsystem, device_type=None)
+        # find_parent('sound') -> this one has sys_name == 'cardN', sys_number == N
+        for d in itertools.chain([device], device.ancestors):
+            print("\n*",d.sys_path)
+            print("  tags:", ", ".join(d.tags))
+            for attr in attrs:
+                print("  attr {}: {}".format(attr, getattr(d, attr)))
+            for k, v in d.items():
+                print("  item {}: {}".format(k, v))
+            for k in d.attributes.available_attributes:
+                print("  Attrib {}: {}".format(k, d.attributes.get(k)))
+
+
 def monitor_udev_midi_hotplugs():
     """Detect MIDI controller adds and removes.
 
@@ -137,8 +162,7 @@ def monitor_udev_midi_hotplugs():
     #list(midi1.items())
 
 def main():
-    #monitor_udev_midi_hotplugs()
-    print("\n".join(str(c) for c in get_alsa_midi_clients()))
+    monitor_udev_midi_hotplugs()
 
 if __name__ == "__main__":
     sys.exit(main())
