@@ -1,0 +1,144 @@
+#!/usr/bin/python3
+
+import sys
+import os
+import re
+import pyudev
+import mido
+import itertools
+import subprocess
+from time import time
+from typing import Dict, List
+from dataclasses import dataclass, field
+
+
+@dataclass
+class AlsaMidiClient:
+    """MIDI Client and list of ports"""
+    client: int
+    product: str
+    type: str  # kernel or user
+    card: int = None
+    properties: Dict[str, str] = None
+    ports: List[str] = field(default_factory=list)
+
+# The P groups should match the keywords of the AlsaMidiClient data elements
+alsa_midi_client_re = re.compile(r"client (?P<client>\d+): '(?P<product>.*)' \[(?P<properties>.*)\]$")
+alsa_midi_port_re = re.compile(r"\s+(?P<port>\d+) '(?P<name>.*)'$")
+
+def parse_alsa_midi_client_line(line):
+    """Decompose the 'client N:' line of aconnect's list output.
+
+    Returns an AlsaMidiClient instance."""
+    client = None
+    m = alsa_midi_client_re.match(line)
+    if m:
+        d = m.groupdict()
+        d['client'] = int(d['client'])
+        # Parse properties of the form type=kernel,card=3
+        props = {k: v for k, v in (pair.split("=") for pair in d['properties'].split(","))}
+        d['properties'] = props
+        client = AlsaMidiClient(type=props['type'], **d)
+        if 'card' in props:
+            client.card = int(props['card'])
+    # TODO raise exception if no match
+    return client
+
+def parse_alsa_midi_port_line(line, client):
+    """Decompose "    N 'portname'" lines from aconnect's list output.
+
+    Apperts the port name onto the client's port list"""
+    m = alsa_midi_port_re.match(line)
+    if m:
+        port = int(m.group('port'))
+        name = m.group('name').strip()
+        assert port == len(client.ports)
+        client.ports.append(name)
+
+
+def get_alsa_midi_clients():
+    """Return a list of AlsaMidiClient dataclass instances.
+
+    Runs aconnect -i to get a list of all input ports.
+    The AlsaMidiClient objects contain the mappings of client numbers to card
+    numbers"""
+
+    clients = []
+
+    res = subprocess.run(["aconnect", "-i"], capture_output=True, check=True)
+    # TODO Catch CalledProcessError?
+
+    # Parse the aconnect list
+    client = None
+    for line in res.stdout.decode().splitlines():
+        if line.startswith("client "):
+            if client:
+                clients.append(client)
+            client = parse_alsa_midi_client_line(line)
+        else:
+            parse_alsa_midi_port_line(line, client)
+    clients.append(client)
+
+    return clients
+
+
+# Udev device-specific "attributes"
+attrs = ['device_node', 'device_number', 'device_path', 'device_type', 'driver', 'is_initialized', 'sequence_number', 'subsystem', 'sys_name', 'sys_number', 'sys_path', 'time_since_initialized']
+
+# TODO look for "bind" and "unbind" actions, since those happen within the
+# add/remove pair.
+# Detect action is None as a "device already plugged in" action.
+def handle_udev_event(device):
+    print("{d.action} {d.sys_path}: {drv} - {d.device_type} [{prod}] {d.parent.sys_name}[{d.parent.sys_number}]".format(d=device, drv=device.get('DRIVER'), prod=device.attributes.get('product')))
+    # find_parent(subsystem, device_type=None)
+    # find_parent('sound') -> this one has sys_name == 'cardN', sys_number == N
+    for d in itertools.chain([device], device.ancestors):
+        print("\n*",d.sys_path)
+        print("  tags:", ", ".join(d.tags))
+        for attr in attrs:
+            print("  attr {}: {}".format(attr, getattr(d, attr)))
+        for k, v in d.items():
+            print("  item {}: {}".format(k, v))
+        for k in d.attributes.available_attributes:
+            print("  Attrib {}: {}".format(k, d.attributes.get(k)))
+
+# TODO FIXME - how to map from system device path to the underlying ALSA port?
+def monitor_udev_midi_hotplugs():
+    """Detect MIDI controller adds and removes.
+
+    Prior to starting a monitor loop for new add and remove events, we first
+    scan all current sound devices for MIDI controllers that have already been
+    connected.
+
+    We avoid any gaps in detection as follows:
+        * Set up the poll object and its filter, and start it:
+            monitor = pyudev.Monitor.from_netlink(context)
+            monitor.filter_by('snd_seq')
+            monitor.start()
+        * after monitor.start(), monitor will buffer any matching udev events
+        * iterate through all the snd_seq devices, launching MIDI loggers
+        * Finally enter the monitor loop
+        * For binds that match things already loaded, just do nothing
+            - This can happen if a plugin occurs between starting the monitor
+              and enumerating the devices manually.
+    """
+
+    context = pyudev.Context()
+    monitor = pyudev.Monitor.from_netlink(context)
+    monitor.filter_by('snd_seq')
+    monitor.start()
+    for device in context.list_devices(SUBSYSTEM="snd_seq"):
+        handle_udev_event(device)
+    for device in iter(monitor.poll, None):
+        handle_udev_event(device)
+
+    #devices = pyudev.Devices()
+    #midi1 = devices.from_path(context, '/devices/pci0000:00/0000:00:14.0/usb3/3-2/3-2:1.0/sound/card1/midi1')
+    #list(midi1.items())
+
+def main():
+    #monitor_udev_midi_hotplugs()
+    print("\n".join(str(c) for c in get_alsa_midi_clients()))
+
+if __name__ == "__main__":
+    sys.exit(main())
