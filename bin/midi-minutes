@@ -7,11 +7,16 @@ import os
 import re
 import pyudev
 import mido
+import argparse
 import itertools
 import subprocess
 from time import time
 from typing import Dict, List
 from dataclasses import dataclass, field
+
+#======================================================================
+# dataclasses
+#======================================================================
 
 @dataclass
 class AlsaMidiClient:
@@ -43,6 +48,10 @@ class DeviceState:
     """Global udev and alsa device state"""
     alsa_cards: Dict[int, AlsaMidiClient] = field(default_factory=dict)  # From the last read
     udev_cards: Dict[int, MidiDevice] = field(default_factory=dict)
+
+#======================================================================
+# Hotplug managaement
+#======================================================================
 
 # The P groups should match the keywords of the AlsaMidiClient data elements
 alsa_midi_client_re = re.compile(r"client (?P<client>\d+): '(?P<product>.*)' \[(?P<properties>.*)\]$")
@@ -160,6 +169,45 @@ def monitor_udev_midi_hotplugs():
     #devices = pyudev.Devices()
     #midi1 = devices.from_path(context, '/devices/pci0000:00/0000:00:14.0/usb3/3-2/3-2:1.0/sound/card1/midi1')
     #list(midi1.items())
+
+
+#======================================================================
+# Command line interface
+#======================================================================
+
+# Operating modes (subcommands):
+#
+# * Listing:
+#   1. list connected devices
+#   2. monitor for device hotplugs and list them
+#   3. Combination of 1 and 2: list connected devices and monitor for them
+#
+#   verbosity - several levels:
+#   1. one-line summary
+#   2. short stanza summarizing all the bits we care about (alsa port, udev info)
+#   3. flood of data (full aconnect parsing, full udev ancestry dump)
+#
+# * midi-logging:
+#   Connect to a client and monitor it, dumping into per-client session
+#   directories per-date, kind of like abrainstorm,
+#
+#   allow multiple connection specifiers:
+#   - cardN:PORT
+#   - clientN:PORT
+#   - *namesubstring*:PORT (if not ambiguous)
+#   PORT defaults to 0
+#
+#   Upload saved files to Google Drive
+#
+# * hotplug-monitoring:
+#   Monitor for snd_seq devices and spin off loggers for each connection
+#
+# * upload:
+#   Scan session dirs and upload to Google Drive
+#
+# * process data:
+#   Collate Google Drive uploads into Google Sheets data reporting
+#   Maybe into csv file with d3 webpage for data exploration
 
 def main():
     monitor_udev_midi_hotplugs()
