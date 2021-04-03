@@ -813,6 +813,9 @@
       // PianoClock logo resize support
       make_resizable(document.getElementById("logo-resizer"), resize_logo);
       window.addEventListener("resize", resquare_logo);
+
+      // Start clock by default
+      toggleClockRun();
     });
 
     let interval_id = null;
